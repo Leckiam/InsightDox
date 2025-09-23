@@ -1,0 +1,42 @@
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Logs y temporales
+*.log
+*.tmp
+*.swp
+
+# Entornos virtuales y dependencias
+.venv/
+myvenv/
+env/
+
+# Archivos de compilación
+dist/
+build/
+out/
+bin/
+obj/
+*.class
+*.exe
+*.dll
+
+# Archivos sensibles
+.env
+*.pem
+*.key
+*.crt
+
+# Bases de datos y backups
+*.sql
+*.sqlite
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
