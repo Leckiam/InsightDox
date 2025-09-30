@@ -1,5 +1,20 @@
 {% load static %}
 
-<nav>
+<nav class="navbar navbar-expand-lg navbar-light bg-navbar-custom shadow-sm px-4">
+    <a class="navbar-brand fw-bold text-primary" href="{% url 'home' %}"><img src="{% static 'bi/img/logo-fenix.png'%}"
+            class="rounded logo-nav" alt="Fenix Ing. y Serv. Ltda."></a>
 
+    <div class="ms-auto d-flex align-items-center gap-3">
+        <input type="text" class="form-control" placeholder="Haz una pregunta..." style="width: 225px;">
+
+        <!-- Dropdown para el avatar -->
+        <div class="dropdown">
+            <img src="{{ user.profile.avatar.url }}" class="rounded avatar-nav" id="avatarDropdown"
+                data-bs-toggle="dropdown" aria-expanded="false">
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
+                <li><a class="dropdown-item" href="{% url 'perfil' %}">Ver Perfil</a></li>
+                <li><a class="dropdown-item" href="{% url 'logOut' %}">Cerrar sesión</a></li>
+            </ul>
+        </div>
+    </div>
 </nav>

@@ -1,0 +1,63 @@
+{% extends "bi/base.html" %}
+{% load static %}
+
+{% block titulo %} Recuperar Contraseña {% endblock %}
+
+{% block statics %}
+<link rel="stylesheet" href="{% static 'bi/css/styleLogin.css'%}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+{% endblock %}
+
+{% block classBody %}
+{% endblock %}
+
+{% block classDiv %}
+class="d-flex align-items-center py-4 fondoLogin"
+{% endblock %}
+
+{% block navbar %}
+
+{% endblock %}
+
+{% block contenido %}
+<form onsubmit="return submitRec()" method="POST" class="w-100" style="max-width: 400px; margin:auto;">
+    {% csrf_token %}
+    <div class="card shadow-lg rounded-4 p-4 position-relative formLogin text-light">
+        <!-- Contenedor del logo -->
+        <div class="d-flex justify-content-center" style="margin-top:-50px;">
+            <img src="{% static 'bi/img/logo-fenix-ID.png'%}" alt="Logo Fenix" width="72"
+                height="72" class="rounded-circle">
+        </div>
+
+        <h1 class="h4 mb-4 text-center fw-bold">Recuperar Contraseña</h1>
+
+        <!-- Mensajes de error -->
+        <ul class="list-unstyled bg-danger text-light rounded-2 p-2 mb-3" id="error-list"
+            style="{% if not e_login %}display:none{% endif %}">
+            <li id="e-email" style="display:none;">E-mail debe tener estrucutra 'ejemplo@fenixing.cl' </li>
+            {% if e_login %}
+            <li id="e-no-existe">El correo '{{e_login}}' no existe.</li>
+            {% endif %}
+        </ul>
+
+        <!-- Correo -->
+        <div class="form-floating mb-3">
+            <input type="email" name="emailRec" class="form-control" id="floatingInput" placeholder="">
+            <label for="floatingInput">Correo</label>
+        </div>
+
+        <!-- Botón -->
+        <button class="btn btn-primary w-100 py-2 fw-bold" id="btnSubmit" type="submit">Recuperar</button>
+
+        <!-- Pie opcional -->
+        <p class="text-center mt-3 mb-0 small text-secondary">
+            ¿Recordo su contraseña? <a href="{% url 'login' %}" class="text-light text-decoration-underline">Iniciar Sesión</a>
+        </p>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block footer %}
+<script src="{% static 'bi/js/jsRecover.js'%}"></script>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "bi/base.html" %}
+{% load static %}
+
+{% block titulo %} Ver Perfil {% endblock %}
+
+{% block statics %}
+<link rel="stylesheet" href="{% static 'bi/css/stylePerfil.css'%}">
+{% endblock %}
+
+{% block classBody %}
+{% endblock %}
+
+{% block classDiv %}
+
+{% endblock %}
+
+{% block contenido %}
+<main class="container py-5">
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar-container">
+              <img src="{{ user.profile.avatar.url }}" alt="avatar" class="avatar">
+              <div class="edit-overlay" data-bs-toggle="modal" data-bs-target="#editAvatarModal">
+                <i class="bi bi-pencil-square fs-3"></i>
+              </div>
+            </div>
+            <div>
+              <h3 class="mb-0">{{ user.username }}</h3>
+              <p class="text-muted mb-0">{{ user.email }}</p>
+              <span class="badge bg-primary mt-2">Rol: {{ user.role }}</span>
+            </div>
+          </div>
+          <hr>
+          <h5>Datos del Usuario</h5>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>Nombre completo:</strong> {{ user.first_name }} {{ user.last_name }}
+            </li>
+            <li class="list-group-item"><strong>Email:</strong> {{ user.email }}</li>
+            <li class="list-group-item"><strong>Último inicio de sesión:</strong> {{ user.last_login }}</li>
+          </ul>
+
+          <h5 class="mt-4">Sistema asignado</h5>
+          <p>Este usuario es responsable del sistema: <strong>{{ user.system.name }}</strong></p>
+          <p class="text-muted">Descripción: {{ user.system.description }}</p>
+
+          <h5 class="mt-4">Permisos del sistema</h5>
+          <table class="table table-sm table-bordered align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Permisos</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in system_users %}
+              <tr>
+                <td>{{ u.username }}</td>
+                <td>{{ u.role }}</td>
+                <td>{{ u.permissions|join:", " }}</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary">Editar</button>
+                  <button class="btn btn-sm btn-outline-danger">Revocar</button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted">No hay usuarios asignados.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <button class="btn btn-success btn-sm">Agregar usuario al sistema</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6>Resumen del rol</h6>
+          <p>{{ user.role_description }}</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<!-- Modal para editar avatar -->
+<div class="modal fade" id="editAvatarModal" tabindex="-1" aria-labelledby="editAvatarModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" enctype="multipart/form-data" action="{% url 'u_avatar' %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="editAvatarModalLabel">Actualizar Avatar</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body text-center">
+          <!-- Imagen actual -->
+          <img id="avatarPreview" src="{{ user.profile.avatar.url }}" class="rounded-circle mb-3" width="120" height="120" style="object-fit: cover;">
+          <div class="mb-3">
+            <input class="form-control" type="file" id="id_avatar" name="avatar" accept="image/*" onchange="previewAvatar(event)">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script src="{% static 'bi/js/jsPerfil.js'%}"></script>
+{% endblock %}
