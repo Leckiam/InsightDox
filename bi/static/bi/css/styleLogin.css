@@ -1,0 +1,19 @@
+body {
+    background: #636363
+}
+
+.fondoLogin {
+    justify-content: center;
+    transform: translateY(20vh);
+}
+
+.formLogin {
+    background-color: #383838;
+}
+
+.form-floating {
+    display: flex;
+    align-items: center;
+    /* Alinea los elementos verticalmente */
+    position: relative;
+}
