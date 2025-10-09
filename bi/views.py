@@ -1,7 +1,9 @@
 from django.contrib.auth import authenticate, login, logout
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from .models import InformeCostos
+from . import lecturaxlsx
 
 
 # Create your views here.
@@ -65,13 +67,21 @@ def home(request):
     if not request.user.is_authenticated:
         return redirect("login")
     else:
-        return render(request,urlBase+'index.html')
+        allInforme = InformeCostos.objects.order_by('-id')[:3]
+        context={
+            "all_Informes":allInforme,
+            "ultimo_Informe":allInforme.first(),
+            "balance":allInforme.first().resumen_ventas-allInforme.first().resumen_gastos
+            }
+        return render(request,urlBase+'index.html',context=context)
     
 def perfil(request):
     if not request.user.is_authenticated:
         return redirect("login")
     else:
-        return render(request,urlBase+'verPerfil.html')
+        allUsers = User.objects.all()
+        context={"all_Usuarios":allUsers}
+        return render(request,urlBase+'verPerfil.html',context=context)
 
 def dashboard(request):
     if not request.user.is_authenticated:
@@ -86,3 +96,46 @@ def update_avatar(request):
         profile.avatar = request.FILES["avatar"]
         profile.save()
     return redirect("perfil")  # Ajusta al nombre real de tu vista de perfil
+
+@login_required
+def addUser(request):
+    if request.user.is_authenticated and request.method == "POST" and request.user.profile.rol.codigo == "SEG":
+        email_tmp = request.POST.get("correoLog")
+        password_tmp = request.POST.get("contrasenaLog")
+        user_tmp = User.objects.create_user(email=email_tmp,
+                                            username='',
+                                            password=password_tmp)
+    return redirect("perfil")  # Ajusta al nombre real de tu vista de perfil
+
+@login_required
+def addInformeCosto(request):
+    if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
+        informe_excel = request.FILES['archivo_informe']
+        df = lecturaxlsx.procesar_informe(informe_excel)
+        
+        url='https://storage.googleapis.com/mi-bucket/informes/'
+        mes,anno = lecturaxlsx.obtenerMesAnno(df)
+        
+        df_ventas = df[df['Categoria'] == 'EdP']
+        df_remuneracion = df[df['Categoria'] == 'MO']
+        df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
+        
+        informe = InformeCostos(
+            usuario=request.user,
+            archivo_url=f'{url}{anno}/{mes}/Informe_{anno}_{mes}.xlsx',
+            mes=mes,
+            anio=anno,
+            filas_detectadas=0,
+            resumen_ventas=float(df_ventas['Total'].sum()),
+            resumen_gastos=float(df_gastos['Total'].sum()),
+            resumen_remuneraciones=float(df_remuneracion['Total'].sum())
+        )
+        informe.save()
+    return redirect("home")
+
+@login_required
+def eliminar_informe(request, id):
+    if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
+        informe = get_object_or_404(InformeCostos, id=id)
+        informe.delete()
+    return redirect('home')

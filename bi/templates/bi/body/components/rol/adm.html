@@ -1,0 +1,75 @@
+{% load static %}
+
+<div class="col-md-6">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3">Últimos Reportes</h5>
+            <ul class="list-group mb-3">
+                {% for informe in all_Informes %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ informe.nombre }}
+                    <div>
+                        <a class="btn btn-sm btn-outline-primary" href="{{ informe.archivo_url }}">Descargar</a>
+                        <form action="{% url 'eliminar_informe' informe.id %}" method="POST" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                        </form>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">No hay Reportes</li>
+                {% endfor %}
+
+            </ul>
+            <div class="d-flex justify-content-between mt-3">
+                <a class="btn btn-outline-secondary" href="{% static 'bi/xlsx/Formato_InformeDeCostos.xlsx' %}" download>
+                    Descargar Formato de Informe
+                </a>
+                <!-- Botón que abre el modal -->
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#reporteModal">
+                    Subir Informe
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para subir informe de costos -->
+<div class="modal fade" id="reporteModal" tabindex="-1" aria-labelledby="reporteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'addInformeCosto' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reporteModalLabel">Subir Informe de Costos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="text-muted mb-3">
+                        Sube el informe mensual consolidado que contiene ventas, gastos y remuneraciones.
+                        El sistema extraerá automáticamente el mes y año desde el archivo.
+                    </p>
+
+                    <div class="mb-3">
+                        <label for="archivo_informe" class="form-label">Seleccionar archivo</label>
+                        <input type="file" class="form-control" id="archivo_informe" name="archivo_informe"
+                            accept=".xlsx,.csv" required>
+                        <div class="form-text">
+                            Formatos permitidos: <strong>.xlsx</strong>, <strong>.csv</strong>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3 mb-0" role="alert">
+                        📎 El nombre y la fecha del informe se generarán automáticamente al guardar.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Subir Informe</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
