@@ -1,0 +1,68 @@
+{% extends "bi/base.html" %}
+{% block titulo %}Análisis de Informe de Costos{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <h1 class="mb-4">Análisis de Informe de Costos</h1>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+        <div class="col-md-8">
+          {{ form.archivo.label_tag }}
+          {{ form.archivo }}
+        </div>
+        <div class="col-md-4 d-grid">
+          <button type="submit" class="btn btn-primary">Subir y Analizar</button>
+        </div>
+      </form>
+      {% if error %}
+        <div class="alert alert-danger mt-3">{{ error }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if total_ventas is not None %}
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Ventas Totales</h5>
+          <p class="card-text fw-bold">{{ total_ventas }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Gastos Totales</h5>
+          <p class="card-text fw-bold">{{ total_gastos }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Remuneraciones Totales</h5>
+          <p class="card-text fw-bold">{{ total_remuneraciones }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-5">
+    <h3>Detalle de Ventas</h3>
+    <div class="table-responsive">{{ ventas_table|safe }}</div>
+  </div>
+  <div class="mb-5">
+    <h3>Detalle de Gastos</h3>
+    <div class="table-responsive">{{ gastos_table|safe }}</div>
+  </div>
+  <div class="mb-5">
+    <h3>Detalle de Remuneraciones</h3>
+    <div class="table-responsive">{{ remuneraciones_table|safe }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

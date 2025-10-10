@@ -1,5 +1,6 @@
 from django.urls import path,include
 from . import views
+from .views import RegistroInformesView, analisis_costos
 
 urlpatterns = [
     path('', views.home,name='home'),
@@ -11,4 +12,6 @@ urlpatterns = [
     path('dashboard/', views.dashboard,name='dashboard'),
     path('addInformeCosto/', views.addInformeCosto,name='addInformeCosto'),
     path('eliminar_informe/<int:id>/', views.eliminar_informe,name='eliminar_informe'),
+    path('registro-informes/', RegistroInformesView.as_view(), name='registro_informes'),
+    path('analisis-costos/', analisis_costos, name='analisis_costos'),
 ]

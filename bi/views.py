@@ -2,8 +2,10 @@ from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import InformeCostos
 from . import lecturaxlsx
+from django.views.generic import ListView
+from .models import ResumenMensual, InformeCostos
+from .forms import InformeCostosUploadForm
 
 
 # Create your views here.
@@ -139,3 +141,50 @@ def eliminar_informe(request, id):
         informe = get_object_or_404(InformeCostos, id=id)
         informe.delete()
     return redirect('home')
+
+class RegistroInformesView(ListView):
+    model = ResumenMensual
+    template_name = "bi/registro_informes.html"
+    context_object_name = "resumenes"
+    paginate_by = 50
+
+@login_required
+def analisis_costos(request):
+    context = {}
+    if request.method == "POST":
+        form = InformeCostosUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            archivo = form.cleaned_data["archivo"]
+            import pandas as pd
+            try:
+                if archivo.name.lower().endswith((".xls", ".xlsx")):
+                    df = pd.read_excel(archivo)
+                else:
+                    df = pd.read_csv(archivo)
+            except Exception as e:
+                context["error"] = f"Error al leer el archivo: {e}"
+                form = InformeCostosUploadForm()
+            else:
+                ventas_df = df[df["Categoria"] == "EdP"]
+                remuneraciones_df = df[df["Categoria"] == "MO"]
+                gastos_df = df[df["Categoria"].isin(["EPP", "M", "H", "GG"])]
+
+                total_ventas = ventas_df["Total"].sum()
+                total_remuneraciones = remuneraciones_df["Total"].sum()
+                total_gastos = gastos_df["Total"].sum()
+
+                context.update({
+                    "total_ventas": total_ventas,
+                    "total_remuneraciones": total_remuneraciones,
+                    "total_gastos": total_gastos,
+                    "ventas_table": ventas_df.to_html(classes="table table-striped table-sm", index=False),
+                    "remuneraciones_table": remuneraciones_df.to_html(classes="table table-striped table-sm", index=False),
+                    "gastos_table": gastos_df.to_html(classes="table table-striped table-sm", index=False),
+                })
+        else:
+            context["error"] = "Formulario inválido. Verifica el archivo subido."
+            form = InformeCostosUploadForm()
+    else:
+        form = InformeCostosUploadForm()
+    context["form"] = form
+    return render(request, "bi/analisis_costos.html", context)

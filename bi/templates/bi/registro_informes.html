@@ -1,0 +1,53 @@
+{% extends "bi/base.html" %}
+{% block titulo %}Registro de Informes Consolidados{% endblock %}
+
+{% block contenido %}
+<div class="container py-4">
+  <h1 class="mb-4">Registro de Informes Consolidados</h1>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Usuario</th>
+          <th>Mes</th>
+          <th>Año</th>
+          <th class="text-end">Resumen Ventas</th>
+          <th class="text-end">Resumen Gastos</th>
+          <th class="text-end">Resumen Remuneraciones</th>
+          <th>Observaciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in resumenes %}
+        <tr>
+          <td>{{ r.usuario.username }}</td>
+          <td>{{ r.get_mes_display }}</td>
+          <td>{{ r.ano }}</td>
+          <td class="text-end">{{ r.resumen_ventas }}</td>
+          <td class="text-end">{{ r.resumen_gastos }}</td>
+          <td class="text-end">{{ r.resumen_remuneraciones }}</td>
+          <td>{{ r.observaciones|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center">No hay registros disponibles.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if is_paginated %}
+  <nav aria-label="Paginación">
+    <ul class="pagination justify-content-end">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

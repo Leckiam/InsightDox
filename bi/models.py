@@ -70,3 +70,30 @@ class InformeCostos(models.Model):
     
     def __str__(self):
         return f"{self.nombre} ({self.mes} {self.anio})"
+
+
+class ResumenMensual(models.Model):
+    MESES_CHOICES = [
+        (1, "Enero"), (2, "Febrero"), (3, "Marzo"), (4, "Abril"),
+        (5, "Mayo"), (6, "Junio"), (7, "Julio"), (8, "Agosto"),
+        (9, "Septiembre"), (10, "Octubre"), (11, "Noviembre"), (12, "Diciembre"),
+    ]
+
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    mes = models.IntegerField(choices=MESES_CHOICES)
+    ano = models.IntegerField()
+
+    resumen_ventas = models.DecimalField(max_digits=14, decimal_places=2)
+    resumen_gastos = models.DecimalField(max_digits=14, decimal_places=2)
+    resumen_remuneraciones = models.DecimalField(max_digits=14, decimal_places=2)
+
+    observaciones = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Resumen mensual"
+        verbose_name_plural = "Resúmenes mensuales"
+        ordering = ["-ano", "-mes", "usuario__username"]
+        unique_together = ("usuario", "mes", "ano")
+
+    def __str__(self):
+        return f"{self.usuario.username} - {self.mes}/{self.ano}"
