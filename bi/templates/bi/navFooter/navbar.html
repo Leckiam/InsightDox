@@ -9,7 +9,7 @@
 
         <!-- Dropdown para el avatar -->
         <div class="dropdown">
-            <img src="{{ user.profile.avatar.url }}" class="rounded avatar-nav" id="avatarDropdown"
+            <img src="{% if user.profile.avatar %}{{ user.profile.avatar.url }}{% endif %}" class="rounded avatar-nav" id="avatarDropdown"
                 data-bs-toggle="dropdown" aria-expanded="false">
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
                 <li><a class="dropdown-item" href="{% url 'perfil' %}">Ver Perfil</a></li>

@@ -5,20 +5,24 @@
         <div class="card-body">
             <h5 class="fw-bold mb-3">Últimos Reportes</h5>
             <ul class="list-group mb-3">
-                {% for informe in all_Informes %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    {{ informe.nombre }}
-                    <div>
-                        <a class="btn btn-sm btn-outline-primary" href="{{ informe.archivo_url }}">Descargar</a>
-                        <form action="{% url 'eliminar_informe' informe.id %}" method="POST" style="display:inline;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
-                        </form>
-                    </div>
-                </li>
-                {% empty %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">No hay Reportes</li>
-                {% endfor %}
+                {% if all_Informes %}
+                    {% for informe in all_Informes %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ informe.nombre }}
+                            <div>
+                                <a class="btn btn-sm btn-outline-primary" href="{{ informe.archivo_url }}">Descargar</a>
+                                {% if user.profile.rol.codigo == 'ADM' %}
+                                <form action="{% url 'eliminar_informe' informe.id %}" method="POST" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">No hay Reportes</li>
+                {% endif %}
 
             </ul>
             <div class="d-flex justify-content-between mt-3">
@@ -26,15 +30,18 @@
                     Descargar Formato de Informe
                 </a>
                 <!-- Botón que abre el modal -->
+                {% if user.profile.rol.codigo == 'ADM' %}
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#reporteModal">
                     Subir Informe
                 </button>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
 <!-- Modal para subir informe de costos -->
+{% if user.profile.rol.codigo == 'ADM' %}
 <div class="modal fade" id="reporteModal" tabindex="-1" aria-labelledby="reporteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -73,3 +80,4 @@
         </div>
     </div>
 </div>
+{% endif %}

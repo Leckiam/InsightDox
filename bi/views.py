@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from .models import InformeCostos
+from .models import InformeCostos,Profile
 from . import lecturaxlsx
 
 
@@ -64,16 +64,38 @@ def recoverPass(request):
         return render(request,urlBase+'recoverPass.html',msg)
 
 def home(request):
-    if not request.user.is_authenticated:
-        return redirect("login")
-    else:
-        allInforme = InformeCostos.objects.order_by('-id')[:3]
-        context={
-            "all_Informes":allInforme,
-            "ultimo_Informe":allInforme.first(),
-            "balance":allInforme.first().resumen_ventas-allInforme.first().resumen_gastos
+    if request.user.is_authenticated:
+        Profile.objects.get_or_create(
+            user=request.user,
+            defaults={
+                'bio': 'Nuevo usuario del sistema',
+                'avatar': None
+                }
+            )
+        try:
+            allInforme = InformeCostos.objects.order_by('-id')[:3]
+            lastInform = allInforme.first()
+            context={
+                "all_Informes": allInforme,
+                "ultimo_Informe": lastInform,
+                "balance": lastInform.resumen_ventas-lastInform.resumen_gastos,
+                "data":{
+                    "kpi_01":[
+                        [120000, 130000, 140000, 150000, 160000, 140000, 130000, 140000, 150000, 160000, 170000, 175000],
+                        [2900000, 3000000, 3100000, 3050000, 3000000, 2950000, 3000000, 3050000, 3000000, 3100000, 3050000, 3053576]
+                    ],
+                    "kpi_02":[4000000, 7500000, 3000000, 14056743]
+                }
+            }
+        except:
+            print('No hay Informes Registrados')
+            context={
+                "ultimo_Informe": InformeCostos(),
+                "balance": 0
             }
         return render(request,urlBase+'index.html',context=context)
+    else:
+        return redirect("login")
     
 def perfil(request):
     if not request.user.is_authenticated:

@@ -44,16 +44,16 @@ class InformeCostos(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     archivo_url = models.URLField(max_length=500, blank=True, null=True)
 
-    nombre = models.CharField(max_length=255, editable=False, )
-    mes = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)],editable=True)
-    anio = models.PositiveIntegerField(editable=True,verbose_name="Año")
+    nombre = models.CharField(max_length=255, editable=False)
+    mes = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)],editable=False)
+    anio = models.PositiveIntegerField(editable=False,verbose_name="Año",validators=[MinValueValidator(1980), MaxValueValidator(3000)])
     fecha_subida = models.DateTimeField(auto_now_add=True)
     procesado = models.BooleanField(default=False)
 
     filas_detectadas = models.PositiveIntegerField(default=0)
-    resumen_ventas = models.DecimalField(max_digits=12, decimal_places=0, null=True, blank=True)
-    resumen_gastos = models.DecimalField(max_digits=12, decimal_places=0, null=True, blank=True)
-    resumen_remuneraciones = models.DecimalField(max_digits=12, decimal_places=0, null=True, blank=True)
+    resumen_ventas = models.DecimalField(max_digits=12, decimal_places=0, default=0, null=False, blank=False)
+    resumen_gastos = models.DecimalField(max_digits=12, decimal_places=0, default=0, null=False, blank=False)
+    resumen_remuneraciones = models.DecimalField(max_digits=12, decimal_places=0, default=0, null=False, blank=False)
     
     observaciones = models.TextField(blank=True, null=True)
 
