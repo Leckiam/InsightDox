@@ -59,7 +59,11 @@ class="main-content"
             <input type="hidden" name="kpi_01" id="kpi_01" value="{{ data.kpi_01 }}">
             <div class="card shadow-sm h-100">
                 <div class="card-body d-flex align-items-center justify-content-center text-muted">
-                    <canvas id="ventasGastosChart"></canvas>
+                    {% if all_Informes %}
+                        <canvas id="ventasGastosChart"></canvas>
+                    {% else %}
+                        <strong>Ventas vs Gastos Mensual - No existen datos</strong>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -67,7 +71,11 @@ class="main-content"
             <input type="hidden" name="kpi_02" id="kpi_02" value="{{ data.kpi_02 }}">
             <div class="card shadow-sm h-100">
                 <div class="card-body d-flex align-items-center justify-content-center text-muted">
-                    <canvas id="gastosCategoriaChart"></canvas>
+                    {% if all_Informes %}
+                        <canvas id="gastosCategoriaChart"></canvas>
+                    {% else %}
+                        <strong>Gastos por Categoría - No existen datos</strong>
+                    {% endif %}
                 </div>
             </div>
         </div>

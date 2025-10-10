@@ -142,17 +142,20 @@ def addInformeCosto(request):
         df_remuneracion = df[df['Categoria'] == 'MO']
         df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
         
-        informe = InformeCostos(
-            usuario=request.user,
-            archivo_url=f'{url}{anno}/{mes}/Informe_{anno}_{mes}.xlsx',
-            mes=mes,
-            anio=anno,
-            filas_detectadas=0,
-            resumen_ventas=float(df_ventas['Total'].sum()),
-            resumen_gastos=float(df_gastos['Total'].sum()),
-            resumen_remuneraciones=float(df_remuneracion['Total'].sum())
-        )
-        informe.save()
+        try:
+            informe = InformeCostos(
+                usuario=request.user,
+                archivo_url=f'{url}{anno}/{mes}/Informe_{anno}_{mes}.xlsx',
+                mes=mes,
+                anio=anno,
+                filas_detectadas=0,
+                resumen_ventas=float(df_ventas['Total'].sum()),
+                resumen_gastos=float(df_gastos['Total'].sum()),
+                resumen_remuneraciones=float(df_remuneracion['Total'].sum())
+            )
+            informe.save()
+        except:
+            print('No cumple con el formato')
     return redirect("home")
 
 @login_required

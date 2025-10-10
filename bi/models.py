@@ -70,3 +70,59 @@ class InformeCostos(models.Model):
     
     def __str__(self):
         return f"{self.nombre} ({self.mes} {self.anio})"
+
+#Modelo Temporales (Se espera crearlos en BigQuery)
+#Nro    Fecha   Descripción     Categoria	Tipo	Cant.	Unidad	Precio  unitario	Total
+class MovimientoEconomico(models.Model):
+    NATURALEZA_CHOICES = [
+        ('VE', 'Venta'),
+        ('GA', 'Gasto'),
+        ('RE', 'Remuneración'),
+    ]
+    CATEGORIA_CHOICES = [
+        ('EdP', 'Estado de Pago'),
+        ('MO', 'Mano de obra'),
+        ('EPP', 'Elementos de protección personal'),
+        ('M', 'Material'),
+        ('H', 'Herramienta'),
+        ('GG', 'Gastos Generales'),
+    ]
+    
+    id = models.IntegerField(primary_key=True, editable=False)
+    nro = models.CharField(max_length=6,editable=False)
+    fecha_venta = models.DateField()
+    descripcion= models.TextField(max_length=80)
+    naturaleza=models.CharField(max_length=50, choices=NATURALEZA_CHOICES)
+    categoria=models.CharField(max_length=50, choices=CATEGORIA_CHOICES)
+    cantidad = models.PositiveIntegerField(default=0)
+    unidad = models.CharField(max_length=20)
+    precio_unitario = models.PositiveIntegerField(default=0)
+    total_venta= models.PositiveIntegerField(blank=True)
+    
+    class Meta:
+        ordering = ['id']
+        constraints = [
+        models.UniqueConstraint(
+            fields=['fecha_venta', 'descripcion'],
+            name='unique_fecha_descripcion'
+        )
+    ]
+        
+    def save(self, *args, **kwargs):
+        self.nro = str(self.nro).zfill(5)
+        self.total_venta = self.cantidad * self.precio_unitario
+        if not self.id:
+            self.id = int(str(self.fecha_venta.strftime('%Y%m%d'))+''+self.nro)
+        super().save(*args, **kwargs)
+    
+    @property
+    def año(self):
+        return self.fecha_venta.year
+
+    @property
+    def mes(self):
+        return self.fecha_venta.month
+
+    @property
+    def día(self):
+        return self.fecha_venta.day
