@@ -30,5 +30,7 @@ pandas==2.2.3
 numpy==1.26.4
 scikit-learn==1.5.2
 
+openpyxl==3.1.5
+
 # Base de datos MariaDB/MySQL
 mysqlclient==2.2.4

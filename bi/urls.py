@@ -9,4 +9,6 @@ urlpatterns = [
     path('perfil/', views.perfil,name='perfil'),
     path("perfil/edit-avatar/", views.update_avatar, name="u_avatar"),
     path('dashboard/', views.dashboard,name='dashboard'),
+    path('addInformeCosto/', views.addInformeCosto,name='addInformeCosto'),
+    path('eliminar_informe/<int:id>/', views.eliminar_informe,name='eliminar_informe'),
 ]
