@@ -11,4 +11,11 @@ urlpatterns = [
     path('dashboard/', views.dashboard,name='dashboard'),
     path('addInformeCosto/', views.addInformeCosto,name='addInformeCosto'),
     path('eliminar_informe/<int:id>/', views.eliminar_informe,name='eliminar_informe'),
+    path('addUser/', views.addUser,name='addUser'),
+    path('editUser/<int:id>/', views.editUser,name='editUser'),
+    path('deleteUser/<int:id>/', views.deleteUser,name='deleteUser'),
+    path('gestUsers/', views.gestUsers, name='gestUsers'),
+    path('gestInformes/', views.gestInformes, name='gestInformes'),
+    path('editObservacion/<int:id>/', views.editObservacion, name='editObservacion'),
+    path('gestMovEco/', views.gestMovEco, name='gestMovEco'),
 ]

@@ -6,7 +6,7 @@ html, body {
 
 /* Contenedor principal */
 .main-content {
-    min-height: 56.8%;
+    min-height: 56.7%;
     display: flex;
     flex-direction: column;
 }
@@ -15,23 +15,39 @@ html, body {
     flex: 1;
 }
 
-/* Navbar */
+/* Navbar personalizado */
 .bg-navbar-custom {
-    background-color: #cc1b2b;
+    background-color: #cc1b2b; /* Rojo navbar */
 }
 
-.logo-nav{
+.logo-nav {
     width: 100px;
     height: 57px;
     background: white;
 }
 
-.avatar-nav{
-    width:40px; 
-    height:40px; 
-    cursor:pointer; 
+.avatar-nav {
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
     background: white;
+    object-fit: cover;
+    border-radius: 50%;
 }
+
+.navbar-nav .nav-link {
+    color: white;
+}
+
+.navbar-nav .nav-link:hover, 
+.navbar-nav .nav-link:focus {
+    color: #ffe;
+}
+
+.dropdown .dropdown-item:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
 
 /* Footer */
 .bg-footer-custom {

@@ -33,3 +33,46 @@ def obtenerMesAnno(df):
     mes = df['Fecha'].dt.month[0]
     anno = df['Fecha'].dt.year[0]
     return [mes,anno]
+
+from .models import MovimientoEconomico, InformeCostos
+from datetime import datetime
+
+def obtener_naturaleza(categoria):
+    if categoria == 'EdP':
+        return 'VE'
+    elif categoria == 'MO':
+        return 'RE'
+    else:
+        return 'GA'
+
+def cargar_movimientos_desde_df(df, informe):
+
+    for _, row in df.iterrows():
+        fecha = pd.to_datetime(row["Fecha"]).date()
+        descripcion = str(row["Descripción"]).strip()
+        categoria = row["Categoria"]
+        naturaleza = obtener_naturaleza(categoria)
+        cantidad = int(row["Cantidad"]) if not pd.isna(row["Cantidad"]) else 0
+        unidad = str(row["Unidad"]).strip()
+        precio_unitario = int(row["Precio unitario"]) if not pd.isna(row["Precio unitario"]) else 0
+
+        mov, created = MovimientoEconomico.objects.get_or_create(
+            fecha=fecha,
+            descripcion=descripcion,
+            defaults={
+                "naturaleza": naturaleza,
+                "categoria": categoria,
+                "cantidad": cantidad,
+                "unidad": unidad,
+                "precio_unitario": precio_unitario,
+                "informe": informe,
+                "nro": int(row["N°"]) if "N°" in df.columns else 0,
+            }
+        )
+        if not created:
+            mov.cantidad = cantidad
+            mov.precio_unitario = precio_unitario
+            mov.unidad = unidad
+            mov.categoria = categoria
+            mov.naturaleza = naturaleza
+            mov.save()

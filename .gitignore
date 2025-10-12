@@ -40,3 +40,9 @@ obj/
 # Python
 __pycache__/
 *.py[cod]
+
+# Ignorar todas las imágenes en media/avatars
+media/avatars/*
+
+# Excepto avatar por defecto
+!media/avatars/user_0_unknown.jpg

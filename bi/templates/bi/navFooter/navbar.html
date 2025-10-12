@@ -1,20 +1,75 @@
 {% load static %}
 
-<nav class="navbar navbar-expand-lg navbar-light bg-navbar-custom shadow-sm px-4">
-    <a class="navbar-brand fw-bold text-primary" href="{% url 'home' %}"><img src="{% static 'bi/img/logo-fenix.png'%}"
-            class="rounded logo-nav" alt="Fenix Ing. y Serv. Ltda."></a>
+<header class="navbar navbar-expand-lg bg-navbar-custom shadow-sm mb-4 px-4 py-2">
 
-    <div class="ms-auto d-flex align-items-center gap-3">
-        <input type="text" class="form-control" placeholder="Haz una pregunta..." style="width: 225px;">
+    <!-- Logo -->
+    <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+        <img src="{% static 'bi/img/logo-fenix.png' %}" alt="Fenix" class="rounded logo-nav me-2">
+    </a>
 
-        <!-- Dropdown para el avatar -->
-        <div class="dropdown">
-            <img src="{% if user.profile.avatar %}{{ user.profile.avatar.url }}{% endif %}" class="rounded avatar-nav" id="avatarDropdown"
-                data-bs-toggle="dropdown" aria-expanded="false">
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
-                <li><a class="dropdown-item" href="{% url 'perfil' %}">Ver Perfil</a></li>
-                <li><a class="dropdown-item" href="{% url 'logOut' %}">Cerrar sesión</a></li>
-            </ul>
+    <!-- Toggler para móviles -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" 
+            aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Contenido del navbar -->
+    <div class="collapse navbar-collapse" id="navbarContent">
+
+        <!-- Menú central -->
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0 d-flex justify-content-center">
+            <li class="nav-item">
+                <a class="nav-link text-white" href="{% url 'home' %}">Inicio</a>
+            </li>
+
+            {% if user.profile.rol.codigo == 'ADM'%}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle text-white" href="#" id="gestionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Gestión
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="gestionDropdown">
+                    <li><a class="dropdown-item" href="{% url 'gestInformes' %}">Informes de Costos</a></li>
+                    <li><a class="dropdown-item" href="{% url 'gestMovEco' %}">Mov. Económicos</a></li>
+                </ul>
+            </li>
+            {% elif user.profile.rol.codigo == 'SEG' %}
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="{% url 'gestUsers' %}">Gest. Usuarios</a>
+                </li>
+            {% endif %}
+
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle text-white" href="#" id="dashboardsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Dashboards
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="dashboardsDropdown">
+                    <li><a class="dropdown-item" href="#">Ventas</a></li>
+                    <li><a class="dropdown-item" href="#">Gastos</a></li>
+                    <li><a class="dropdown-item" href="#">Remuneraciones</a></li>
+                </ul>
+            </li>
+
+            <!-- Opciones de usuario para móvil -->
+            <li class="nav-item d-lg-none">
+                <a class="nav-link text-white" href="{% url 'perfil' %}">Ver Perfil</a>
+            </li>
+            <li class="nav-item d-lg-none">
+                <a class="nav-link text-white" href="{% url 'logOut' %}">Cerrar sesión</a>
+            </li>
+        </ul>
+
+        <!-- Input y avatar (solo en escritorio) -->
+        <div class="d-none d-lg-flex align-items-center gap-2 ms-auto">
+            <input type="text" class="form-control form-control-sm" placeholder="Haz una pregunta..." style="width: 200px;">
+            <div class="dropdown d-inline">
+                <img src="{% if user.profile.avatar %}{{ user.profile.avatar.url }}{% endif %}" 
+                    class="rounded avatar-nav" id="avatarDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor:pointer;">
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="avatarDropdown">
+                    <li><a class="dropdown-item" href="{% url 'perfil' %}">Ver Perfil</a></li>
+                    <li><a class="dropdown-item" href="{% url 'logOut' %}">Cerrar sesión</a></li>
+                </ul>
+            </div>
         </div>
+
     </div>
-</nav>
+</header>

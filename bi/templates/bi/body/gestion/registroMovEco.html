@@ -1,0 +1,123 @@
+{% extends "bi/base.html" %}
+{% load static %}
+{% load currency %}
+
+{% block titulo %} Inicio {% endblock %}
+
+{% block statics %}
+<link rel="stylesheet" href="{% static 'bi/css/styleMovimiento.css' %}">
+{% endblock %}
+
+{% block classBody %}
+{% endblock %}
+
+{% block classDiv %}
+class="main-content"
+{% endblock %}
+
+{% block contenido %}
+<div class="container my-2">
+    <h2 class="mb-4">Movimientos</h2>
+
+    <form method="get" class="mb-3 d-flex align-items-center flex-wrap gap-2">
+        <!-- Tipo -->
+        <label for="tipo" class="fw-bold me-2">Tipo:</label>
+        <select name="tipo" id="tipo" class="form-select" style="width:auto;">
+            <option value="">Todos</option>
+            <option value="VE" {% if selected_tipo == 'VE' %}selected{% endif %}>Venta</option>
+            <option value="GA" {% if selected_tipo == 'GA' %}selected{% endif %}>Gasto</option>
+            <option value="RE" {% if selected_tipo == 'RE' %}selected{% endif %}>Remuneración</option>
+        </select>
+
+        <!-- Mes -->
+        <label for="mes" class="fw-bold me-2">Mes:</label>
+        <select name="mes" class="form-select" style="width:auto;">
+            <option value="">Todos</option>
+            {% for num, nombre in meses %}
+                <option value="{{ num }}" {% if selected_mes == num %}selected{% endif %}>
+                    {{ nombre }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <!-- Año -->
+        <label for="anno" class="fw-bold me-2">Año:</label>
+        <select name="anno" class="form-select" style="width:auto;">
+            <option value="">Todos</option>
+            {% for y in annos %}
+            <option value="{{ y }}" {% if selected_anno == y %}selected{% endif %}>
+                {{ y }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <!-- Cantidad por página -->
+        <label for="per_page" class="fw-bold me-2">Mostrar:</label>
+        <select name="per_page" id="per_page" class="form-select" style="width:auto;">
+            <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
+            <option value="15" {% if per_page == '15' %}selected{% endif %}>15</option>
+            <option value="20" {% if per_page == '20' %}selected{% endif %}>20</option>
+            <option value="30" {% if per_page == '30' %}selected{% endif %}>30</option>
+            <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
+        </select>
+
+        <button type="submit" class="btn btn-filtrar-custom btn-sm">Filtrar</button>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>N°</th>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                    <th>Categoria</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Unidad</th>
+                    <th>Precio unitario</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movimiento in all_Movimientos %}
+                <tr>
+                    <td>{{ forloop.counter|add:offset }}</td>
+                    <td>{{ movimiento.fecha }}</td>
+                    <td>{{ movimiento.descripcion }}</td>
+                    <td>{{ movimiento.categoria }}</td>
+                    <td>{{ movimiento.naturaleza }}</td>
+                    <td>{{ movimiento.cantidad }}</td>
+                    <td>{{ movimiento.unidad }}</td>
+                    <td>{{ movimiento.precio_unitario|clp }}</td>
+                    <td>{{ movimiento.total|clp }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted">No hay movimientos registrados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <!-- Paginación -->
+    <div class="d-flex justify-content-center mt-4">
+        {% if all_Movimientos.has_previous %}
+        <a href="?page={{ all_Movimientos.previous_page_number }}&tipo={{ selected_tipo }}&mes={{ selected_mes }}&anno={{ selected_año }}&per_page={{ per_page }}"
+            class="btn btn-outline-secondary btn-sm me-2">
+            Anterior
+        </a>
+        {% endif %}
+
+        <span class="align-self-center">
+            Página {{ all_Movimientos.number }} de {{ all_Movimientos.paginator.num_pages }}
+        </span>
+
+        {% if all_Movimientos.has_next %}
+        <a href="?page={{ all_Movimientos.next_page_number }}&tipo={{ selected_tipo }}&mes={{ selected_mes }}&anno={{ selected_año }}&per_page={{ per_page }}"
+            class="btn btn-outline-secondary btn-sm ms-2">
+            Siguiente
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
