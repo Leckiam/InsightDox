@@ -1,9 +1,10 @@
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.contrib.auth.models import User
-from .models import InformeCostos,Profile
-from . import lecturaxlsx
+from .models import InformeCostos,Profile,Roles
+from . import lecturaxlsx,permisos
 
 
 # Create your views here.
@@ -102,7 +103,11 @@ def perfil(request):
         return redirect("login")
     else:
         allUsers = User.objects.all()
-        context={"all_Usuarios":allUsers}
+        allRoles = Roles.objects.all()
+        context={
+            "all_Usuarios":allUsers,
+            "all_roles":allRoles
+            }
         return render(request,urlBase+'verPerfil.html',context=context)
 
 def dashboard(request):
@@ -121,13 +126,86 @@ def update_avatar(request):
 
 @login_required
 def addUser(request):
-    if request.user.is_authenticated and request.method == "POST" and request.user.profile.rol.codigo == "SEG":
-        email_tmp = request.POST.get("correoLog")
-        password_tmp = request.POST.get("contrasenaLog")
-        user_tmp = User.objects.create_user(email=email_tmp,
-                                            username='',
+    if request.method == "POST" and request.user.profile.rol.codigo == "SEG":
+        username_tmp = request.POST.get("username")
+        email_tmp = request.POST.get("correo")
+        password_tmp = request.POST.get("contrasena")
+        rolID_tmp = request.POST.get("rol")
+        avatar_tmp = request.FILES.get("avatar")
+        if avatar_tmp == None:
+            avatar_tmp = 'avatars/user_0_unknown.jpg'
+        def addProfile(p_user,p_avatar,p_rolID):
+            rolTmp = Roles.objects.get(id=p_rolID)
+            default_profile={
+                "avatar":p_avatar,
+                "rol":rolTmp
+            }
+            Profile.objects.get_or_create(user=p_user,defaults=default_profile)
+            codigo_rol = rolTmp.codigo
+            permisos.setPermisoUser(p_user,codigo_rol)
+        try:
+            if User.objects.filter(username=username_tmp).exists():
+                user_tmp = User.objects.get(username=username_tmp)
+                if not Profile.objects.filter(user=user_tmp).exists():
+                    addProfile(user_tmp,avatar_tmp,rolID_tmp)
+            else:
+                user_tmp = User.objects.create_user(email=email_tmp,
+                                            username=username_tmp,
                                             password=password_tmp)
+                addProfile(user_tmp,avatar_tmp,rolID_tmp)
+        except:
+            print('Fallo el agregar Usuario')
     return redirect("perfil")  # Ajusta al nombre real de tu vista de perfil
+
+@login_required
+def deleteUser(request,id):
+    if request.method == "POST" and request.user.profile.rol.codigo == "SEG":
+        user_tmp = get_object_or_404(User, id=id)
+        profile_tmp = Profile.objects.filter(user=user_tmp).first()
+        try:
+            with transaction.atomic():
+                if profile_tmp:
+                    profile_tmp.delete()
+                user_tmp.delete()
+                print("Usuario eliminado correctamente")
+        except Exception as e:
+            print(f"No se pudo eliminar el usuario: {e}")
+    return redirect("perfil")
+
+@login_required
+def editUser(request,id):
+    if request.method == "POST" and request.user.profile.rol.codigo == "SEG":
+        password_tmp = request.POST.get("contrasena")
+        rolID_tmp = request.POST.get("rol")
+        avatar_tmp = request.FILES.get("avatar")
+        
+        user_tmp = get_object_or_404(User, id=id)
+        rolTmp = Roles.objects.get(id=rolID_tmp)
+        profile_tmp = Profile.objects.filter(user=user_tmp).first()
+        
+        update = False
+        try:
+            with transaction.atomic():
+                if profile_tmp:
+                    if avatar_tmp != None or rolTmp != profile_tmp.rol:
+                        if avatar_tmp:
+                            profile_tmp.avatar = avatar_tmp  # solo si se subió uno nuevo
+                        profile_tmp.rol = rolTmp
+                        profile_tmp.save()
+                        codigo_rol = rolTmp.codigo
+                        permisos.setPermisoUser(user_tmp,codigo_rol)
+                        update = True
+                if password_tmp:
+                    user_tmp.set_password(password_tmp)
+                    user_tmp.save()
+                    update = True
+                if update:
+                    print( "Usuario editado correctamente")
+                else:
+                    print('No se realizaron cambios al Usuario')
+        except Exception as e:
+            print(f"No se pudo editar el usuario: {e}")
+    return redirect("perfil")
 
 @login_required
 def addInformeCosto(request):

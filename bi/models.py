@@ -35,7 +35,8 @@ class Profile(models.Model):
         try:
             this = Profile.objects.get(id=self.id)
             if this.avatar and this.avatar != self.avatar:
-                this.avatar.delete(save=False)
+                if not this.avatar.name.endswith("user_0_unknow.jpg"):
+                    this.avatar.delete(save=False)
         except Profile.DoesNotExist:
             pass
         super().save(*args, **kwargs)

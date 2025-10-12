@@ -6,6 +6,7 @@ from .models import Roles,Profile
 
 @receiver(post_migrate)
 def crear_datos_base(sender, **kwargs):
+    from . import permisos
     # --- Crear roles base ---
     roles_base = [
         {
@@ -33,22 +34,23 @@ def crear_datos_base(sender, **kwargs):
 
     from decouple import config
     # --- Crear usuario base ---
-    if not User.objects.filter(username=config('ADMIN_USER')).exists():
+    if not User.objects.filter(username=config('SEG_USER')).exists():
         User.objects.create_superuser(
-            username=config('ADMIN_USER'),
-            email=config('ADMIN_EMAIL'),
-            password=config('ADMIN_PASS')
+            username=config('SEG_USER'),
+            email=config('SEG_EMAIL'),
+            password=config('SEG_PASS')
         )
-        print("Usuario admin creado automáticamente")
+        print("Usuario Seguridad creado automáticamente")
     
     # --- Crear Perfil a Usuario base ---
-    user_admin=User.objects.get(username="admin")
-    rol_admin=Roles.objects.get(codigo='ADM')
+    user_seg=User.objects.get(username=config('SEG_USER'))
+    rol_seg=Roles.objects.get(codigo='SEG')
     Profile.objects.get_or_create(
-        user=user_admin,
+        user=user_seg,
         defaults={
-            'user':user_admin,
-            'avatar': None,
-            'rol': rol_admin
+            'avatar': "avatars/user_0_unknown.jpg",
+            'rol': rol_seg
         }
-        )
+    )
+    codigo_rol = rol_seg.codigo
+    permisos.setPermisoUser(user_seg,codigo_rol)

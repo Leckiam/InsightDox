@@ -11,4 +11,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard,name='dashboard'),
     path('addInformeCosto/', views.addInformeCosto,name='addInformeCosto'),
     path('eliminar_informe/<int:id>/', views.eliminar_informe,name='eliminar_informe'),
+    path('addUser/', views.addUser,name='addUser'),
+    path('editUser/<int:id>/', views.editUser,name='editUser'),
+    path('deleteUser/<int:id>/', views.deleteUser,name='deleteUser'),
 ]
