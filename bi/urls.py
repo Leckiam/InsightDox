@@ -14,4 +14,8 @@ urlpatterns = [
     path('addUser/', views.addUser,name='addUser'),
     path('editUser/<int:id>/', views.editUser,name='editUser'),
     path('deleteUser/<int:id>/', views.deleteUser,name='deleteUser'),
+    path('gestUsers/', views.gestUsers, name='gestUsers'),
+    path('gestInformes/', views.gestInformes, name='gestInformes'),
+    path('editObservacion/<int:id>/', views.editObservacion, name='editObservacion'),
+    path('gestMovEco/', views.gestMovEco, name='gestMovEco'),
 ]

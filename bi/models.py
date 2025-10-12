@@ -42,11 +42,16 @@ class Profile(models.Model):
         super().save(*args, **kwargs)
         
 class InformeCostos(models.Model):
+    MESES_CHOICES = [
+        (1, "Enero"), (2, "Febrero"), (3, "Marzo"), (4, "Abril"),
+        (5, "Mayo"), (6, "Junio"), (7, "Julio"), (8, "Agosto"),
+        (9, "Septiembre"), (10, "Octubre"), (11, "Noviembre"), (12, "Diciembre"),
+    ]
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     archivo_url = models.URLField(max_length=500, blank=True, null=True)
 
     nombre = models.CharField(max_length=255, editable=False)
-    mes = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)],editable=False)
+    mes = models.PositiveIntegerField(choices=MESES_CHOICES,editable=False)
     anio = models.PositiveIntegerField(editable=False,verbose_name="Año",validators=[MinValueValidator(1980), MaxValueValidator(3000)])
     fecha_subida = models.DateTimeField(auto_now_add=True)
     procesado = models.BooleanField(default=False)
@@ -56,7 +61,7 @@ class InformeCostos(models.Model):
     resumen_gastos = models.DecimalField(max_digits=12, decimal_places=0, default=0, null=False, blank=False)
     resumen_remuneraciones = models.DecimalField(max_digits=12, decimal_places=0, default=0, null=False, blank=False)
     
-    observaciones = models.TextField(blank=True, null=True)
+    observaciones = models.TextField(default='--', blank=True, null=True)
 
     class Meta:
         verbose_name = "InformeCosto"
@@ -89,41 +94,38 @@ class MovimientoEconomico(models.Model):
         ('GG', 'Gastos Generales'),
     ]
     
-    id = models.IntegerField(primary_key=True, editable=False)
-    nro = models.CharField(max_length=6,editable=False)
-    fecha_venta = models.DateField()
+    nro = models.PositiveIntegerField(default=0)
+    informe = models.ForeignKey(InformeCostos, on_delete=models.CASCADE, null=True, blank=True)
+    fecha = models.DateField()
     descripcion= models.TextField(max_length=80)
     naturaleza=models.CharField(max_length=50, choices=NATURALEZA_CHOICES)
     categoria=models.CharField(max_length=50, choices=CATEGORIA_CHOICES)
     cantidad = models.PositiveIntegerField(default=0)
     unidad = models.CharField(max_length=20)
     precio_unitario = models.PositiveIntegerField(default=0)
-    total_venta= models.PositiveIntegerField(blank=True)
+    total= models.PositiveIntegerField(blank=True)
     
     class Meta:
         ordering = ['id']
         constraints = [
         models.UniqueConstraint(
-            fields=['fecha_venta', 'descripcion'],
+            fields=['fecha', 'descripcion'],
             name='unique_fecha_descripcion'
         )
     ]
         
     def save(self, *args, **kwargs):
-        self.nro = str(self.nro).zfill(5)
-        self.total_venta = self.cantidad * self.precio_unitario
-        if not self.id:
-            self.id = int(str(self.fecha_venta.strftime('%Y%m%d'))+''+self.nro)
+        self.total = self.cantidad * self.precio_unitario
         super().save(*args, **kwargs)
     
     @property
     def año(self):
-        return self.fecha_venta.year
+        return self.fecha.year
 
     @property
     def mes(self):
-        return self.fecha_venta.month
+        return self.fecha.month
 
     @property
     def día(self):
-        return self.fecha_venta.day
+        return self.fecha.day

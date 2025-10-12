@@ -48,9 +48,9 @@ grupo_ADM , created_adm = Group.objects.get_or_create(name="Gestion_ADM")
 grupo_CON , created_adm = Group.objects.get_or_create(name="Gestion_CON")
 
 # Asignar permisos al grupo
-if not created_adm:
+if created_adm:
     grupo_ADM.permissions.set(permisosADM())
-if not created_seg:
+if created_seg:
     grupo_SEG.permissions.set(permisosSEG())
 
 def addPermisoUser(p_user,p_rolCodigo):

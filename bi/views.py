@@ -2,9 +2,10 @@ from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from datetime import date
 from django.contrib.auth.models import User
-from .models import InformeCostos,Profile,Roles
-from . import lecturaxlsx,permisos
+from .models import InformeCostos,Profile,Roles,MovimientoEconomico
+from . import lecturaxlsx,permisos,obtenerKpis
 
 
 # Create your views here.
@@ -74,22 +75,27 @@ def home(request):
                 }
             )
         try:
-            allInforme = InformeCostos.objects.order_by('-id')[:3]
-            lastInform = allInforme.first()
+            hoy = date.today()
+            anio_actual = hoy.year
+            mes_actual = hoy.month
+            
+            allInforme = InformeCostos.objects.all().order_by('-anio', '-mes')[:3]
+            if InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).exists():
+                lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).order_by('-id').first()
+            else:
+                lastInform = InformeCostos()
+            
             context={
                 "all_Informes": allInforme,
                 "ultimo_Informe": lastInform,
-                "balance": lastInform.resumen_ventas-lastInform.resumen_gastos,
+                "balance": lastInform.resumen_ventas-(lastInform.resumen_gastos+lastInform.resumen_remuneraciones),
                 "data":{
-                    "kpi_01":[
-                        [120000, 130000, 140000, 150000, 160000, 140000, 130000, 140000, 150000, 160000, 170000, 175000],
-                        [2900000, 3000000, 3100000, 3050000, 3000000, 2950000, 3000000, 3050000, 3000000, 3100000, 3050000, 3053576]
-                    ],
-                    "kpi_02":[4000000, 7500000, 3000000, 14056743]
+                    "kpi_01":obtenerKpis.obtKpi_01(),
+                    "kpi_02":obtenerKpis.obtKpi_02()
                 }
             }
-        except:
-            print('No hay Informes Registrados')
+        except Exception as e:
+            print("Ocurrió un error:", e)
             context={
                 "ultimo_Informe": InformeCostos(),
                 "balance": 0
@@ -102,12 +108,15 @@ def perfil(request):
     if not request.user.is_authenticated:
         return redirect("login")
     else:
-        allUsers = User.objects.all()
-        allRoles = Roles.objects.all()
-        context={
-            "all_Usuarios":allUsers,
-            "all_roles":allRoles
-            }
+        context={}
+        if request.user.profile.rol.codigo == "SEG":
+            allUsers = User.objects.all()
+            allRoles = Roles.objects.all()
+            context={
+                "all_Usuarios":allUsers,
+                "all_roles":allRoles,
+                "rows_per_page": 5
+                }
         return render(request,urlBase+'verPerfil.html',context=context)
 
 def dashboard(request):
@@ -208,6 +217,19 @@ def editUser(request,id):
     return redirect("perfil")
 
 @login_required
+def gestUsers(request):
+    if request.user.profile.rol.codigo == "SEG":
+        allUsers = User.objects.all()
+        allRoles = Roles.objects.all()
+        context={
+            "all_Usuarios":allUsers,
+            "all_roles":allRoles
+            }
+        return render(request, urlBase+"gestion/gestionUsers.html",context)
+    else:
+        return redirect('home')
+
+@login_required
 def addInformeCosto(request):
     if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
         informe_excel = request.FILES['archivo_informe']
@@ -221,24 +243,141 @@ def addInformeCosto(request):
         df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
         
         try:
-            informe = InformeCostos(
+            informe, created = InformeCostos.objects.get_or_create(
                 usuario=request.user,
-                archivo_url=f'{url}{anno}/{mes}/Informe_{anno}_{mes}.xlsx',
                 mes=mes,
                 anio=anno,
-                filas_detectadas=0,
-                resumen_ventas=float(df_ventas['Total'].sum()),
-                resumen_gastos=float(df_gastos['Total'].sum()),
-                resumen_remuneraciones=float(df_remuneracion['Total'].sum())
+                defaults={
+                    'archivo_url': f'{url}{anno}/{mes}/Informe_{anno}_{mes}.xlsx',
+                    'filas_detectadas': len(df),
+                    'resumen_ventas': float(df_ventas['Total'].sum()),
+                    'resumen_gastos': float(df_gastos['Total'].sum()),
+                    'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
+                }
             )
-            informe.save()
+
+            # Solo cargar movimientos si se creó recién
+            if created:
+                lecturaxlsx.cargar_movimientos_desde_df(df, informe)
+            else:
+                print('El informe ya existe')
         except:
             print('No cumple con el formato')
-    return redirect("home")
+        next_url = request.POST.get('next','home')
+        return redirect(next_url)
+    return redirect('home')
 
 @login_required
 def eliminar_informe(request, id):
     if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
         informe = get_object_or_404(InformeCostos, id=id)
         informe.delete()
-    return redirect('home')
+    next_url = request.POST.get('next', 'home')
+    return redirect(next_url)
+
+from django.core.paginator import Paginator
+
+@login_required
+def gestInformes(request):
+    allInformes = InformeCostos.objects.all().order_by('-anio', '-mes')
+    
+    annos_existentes = InformeCostos.objects.aggregate(
+        anno_max=Max('anio'),
+        anno_min=Min('anio')
+    )
+    if annos_existentes['anno_min'] and annos_existentes['anno_max']:
+        anno_inicio = annos_existentes['anno_min']
+        anno_fin = annos_existentes['anno_max']
+        annos = list(range(anno_inicio, anno_fin + 1))
+    else:
+        annos = []
+        
+    anno = request.GET.get('anno')
+    if anno:
+        allInformes = allInformes.filter(anio=anno)
+        anno = int(anno)
+    
+    
+    paginator = Paginator(allInformes, 6)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        "all_Informes": page_obj,
+        "selected_anno": anno,
+        "annos": annos
+    }
+    return render(request, urlBase + "gestion/registroInformes.html", context)
+
+@login_required
+def editObservacion(request,id):
+    if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
+        observacion = request.POST.get("observaciones")
+        informe_tmp = get_object_or_404(InformeCostos, id=id)
+        try:
+            informe_tmp.observaciones = observacion
+            informe_tmp.save()
+        except Exception as e:
+            print(f"No se pudo actualizar la observación: {e}")
+    return redirect('gestInformes')
+
+from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
+
+from django.db.models import Min, Max
+
+@login_required
+def gestMovEco(request):
+    # Query base
+    allMovimientos = MovimientoEconomico.objects.all().order_by('-fecha')
+
+    # 
+    annos_existentes = MovimientoEconomico.objects.aggregate(
+        anno_min=Min('fecha'),
+        anno_max=Max('fecha')
+    )
+    if annos_existentes['anno_min'] and annos_existentes['anno_max']:
+        anno_inicio = annos_existentes['anno_min'].year
+        anno_fin = annos_existentes['anno_max'].year
+        annos = list(range(anno_inicio, anno_fin + 1))
+    else:
+        annos = []
+    
+    meses_choices = [
+        (1, "Enero"), (2, "Febrero"), (3, "Marzo"), (4, "Abril"),
+        (5, "Mayo"), (6, "Junio"), (7, "Julio"), (8, "Agosto"),
+        (9, "Septiembre"), (10, "Octubre"), (11, "Noviembre"), (12, "Diciembre"),
+    ]
+
+    # --- FILTROS ---
+    tipo = request.GET.get('tipo')  # VE, GA, RE
+    mes = request.GET.get('mes')    # 1..12
+    anno = request.GET.get('anno')
+    per_page = request.GET.get('per_page', 15)  # default 14 por página
+
+    if tipo:
+        allMovimientos = allMovimientos.filter(naturaleza=tipo)
+    if mes:
+        allMovimientos = allMovimientos.filter(fecha__month=mes)
+        mes = int(mes)
+    if anno:
+        allMovimientos = allMovimientos.filter(fecha__year=anno)
+        anno = int(anno)
+
+    # --- PAGINACIÓN ---
+    paginator = Paginator(allMovimientos, int(per_page))
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    offset = (page_obj.number-1) * int(per_page)
+    
+    context = {
+        "all_Movimientos": page_obj,
+        "selected_tipo": tipo,
+        "selected_mes": mes,
+        "selected_anno": anno,
+        "per_page": str(per_page),
+        "offset":offset,
+        "meses": meses_choices,
+        "annos": annos
+    }
+    return render(request, urlBase+"gestion/registroMovEco.html", context)

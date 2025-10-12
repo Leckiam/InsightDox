@@ -52,3 +52,37 @@ function abrirModalEditar(id, username, correo, rolId, avatar_url) {
         avatarPreview.src = avatar_url; // Ejemplo, ajusta según tu modelo
     }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    const container = document.getElementById('usuariosContainer');
+    const rowsPerPage = parseInt(container.dataset.rows) || 15;
+    const rows = Array.from(container.querySelectorAll('.usuario-row'));
+    let currentPage = 1;
+    const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+    function showPage(page) {
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        rows.forEach((row, index) => {
+            row.style.display = (index >= start && index < end) ? '' : 'none';
+        });
+        document.getElementById('prevBtn').disabled = page === 1;
+        document.getElementById('nextBtn').disabled = page === totalPages;
+    }
+
+    showPage(currentPage);
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            showPage(currentPage);
+        }
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            showPage(currentPage);
+        }
+    });
+});
