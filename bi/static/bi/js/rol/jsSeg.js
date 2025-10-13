@@ -20,6 +20,8 @@ function abrirModalAgregar() {
     // Limpiar inputs
     document.getElementById('modalUsername').value = "";
     document.getElementById('modalUsername').disabled = false;
+    document.getElementById('modalNombre').value = "";
+    document.getElementById('modalNombre').required = true
     document.getElementById('modalCorreo').value = "";
     document.getElementById('modalCorreo').disabled = false;
     document.getElementById('modalPassword').value = "";
@@ -33,12 +35,14 @@ function abrirModalAgregar() {
 }
 
 // --- Modal para editar usuario ---
-function abrirModalEditar(id, username, correo, rolId, avatar_url) {
+function abrirModalEditar(id, username,nombre, correo, rolId, avatar_url) {
     document.getElementById('userModalLabel').innerText = "Editar usuario";
     document.getElementById('userForm').action = `/editUser/${id}/`;
 
     document.getElementById('modalUsername').value = username;
     document.getElementById('modalUsername').disabled = true;
+    document.getElementById('modalNombre').value = nombre;
+    document.getElementById('modalNombre').required = false
     document.getElementById('modalCorreo').value = correo;
     document.getElementById('modalCorreo').disabled = true;
     document.getElementById('modalPassword').value = "";

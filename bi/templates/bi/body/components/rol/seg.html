@@ -31,7 +31,7 @@
                 <td class="d-flex justify-content-center gap-2">
                     <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#userModal"
                         style="width: 40%"
-                        onclick="abrirModalEditar('{{ u.id }}', '{{ u.username }}', '{{ u.email }}', '{{ u.profile.rol.id }}', '{{ u.profile.avatar.url }}')">
+                        onclick="abrirModalEditar('{{ u.id }}', '{{ u.username }}', '{{user.first_name}}', '{{ u.email }}', '{{ u.profile.rol.id }}', '{{ u.profile.avatar.url }}')">
                         Editar
                     </button>
                     <form action="{% url 'deleteUser' u.id %}" method="POST" style="display:inline; width: 40%">
@@ -73,6 +73,11 @@
                     <div class="form-floating mb-3">
                         <input type="email" name="correo" class="form-control" id="modalCorreo" placeholder="" required>
                         <label for="modalCorreo">Correo</label>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input type="text" name="nombre" class="form-control" id="modalCorreo" placeholder="" required>
+                        <label for="modalNombre">Nombre Completo</label>
                     </div>
 
                     <div class="form-floating mb-3 position-relative">

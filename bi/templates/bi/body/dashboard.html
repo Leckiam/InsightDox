@@ -4,25 +4,95 @@
 {% block titulo %} Dashboard {% endblock %}
 
 {% block statics %}
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block classBody %}
 {% endblock %}
 
 {% block classDiv %}
-
-{% endblock %}
-
-{% block navbar %}
-
+class="main-content"
 {% endblock %}
 
 {% block contenido %}
-
-
-{% endblock %}
-
-{% block footer %}
-
+<main class="container py-4">
+    <h1>Dashboard Financiero (Gráficos)</h1>
+    <!-- Gráficas -->
+    
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            {{ data.kpi_03|json_script:"kpi_03" }}
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-center text-muted">
+                    {% if data.kpi_03 %}
+                    <canvas id="ventasGastosChart"></canvas>
+                    {% else %}
+                    <strong>Número de transacciones y crecimiento mensual - No existen datos</strong>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            {{ data.kpi_04|json_script:"kpi_04" }}
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-center text-muted">
+                    {% if data.kpi_04 %}
+                    <canvas id="graficoTicket"></canvas>
+                    {% else %}
+                    <strong>Ticket Promedio Mensual - No existen datos</strong>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            {{ data.kpi_05|json_script:"kpi_05" }}
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-center text-muted">
+                    {% if data.kpi_05 %}
+                    <canvas id="graficoGastoPromedio"></canvas>
+                    {% else %}
+                    <strong>Ticket Promedio Mensual - No existen datos</strong>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            {{ data.kpi_06|json_script:"kpi_06" }}
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-center text-muted">
+                    {% if data.kpi_06 %}
+                    <canvas id="graficoEficienciaGastos"></canvas>
+                    {% else %}
+                    <strong>Ticket Promedio Mensual - No existen datos</strong>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            {{ data.kpi_07|json_script:"kpi_07" }}
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-center text-muted">
+                    {% if data.kpi_07 %}
+                    <canvas id="graficoEvolucionGastos"></canvas>
+                    {% else %}
+                    <strong>Evolución mensual de gastos - No existen datos</strong>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            {{ data.kpi_08|json_script:"kpi_08" }}
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-center text-muted">
+                    {% if data.kpi_08 %}
+                    <canvas id="graficoRentabilidadMensual"></canvas>
+                    {% else %}
+                    <strong>Rentabilidad (%) - No existen datos</strong>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<script src="{% static 'bi/js/jsDashboard.js' %}"></script>
 {% endblock %}
