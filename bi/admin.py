@@ -1,12 +1,12 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
-from .models import Profile,Roles,InformeCostos,ResumenMensual
+from .models import Profile,Roles,InformeCostos,MovimientoEconomico
 
 # Register your models here.
 admin.site.register(Roles)
 admin.site.register(InformeCostos)
-admin.site.register(ResumenMensual)
+admin.site.register(MovimientoEconomico)
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):

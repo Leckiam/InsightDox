@@ -6,9 +6,9 @@ register = template.Library()
 @register.filter(name="clp")
 def clp(value):
     """
-    Formatea un número como moneda chilena (CLP) con separadores de miles por punto
-    y decimales con coma, y antepone el símbolo $.
-    Ejemplo: 1234567.89 -> $ 1.234.567,89
+    Formatea un número como moneda chilena (CLP) sin decimales,
+    con separador de miles por punto y antepone el símbolo $.
+    Ejemplo: 1234567 -> $ 1.234.567
     """
     try:
         # Convertir de forma segura a Decimal
@@ -16,8 +16,7 @@ def clp(value):
     except (InvalidOperation, TypeError, ValueError):
         return value
 
-    # Formato US: 1,234,567.89
-    s = f"{val:,.2f}"
-    # Convertir a formato CL: 1.234.567,89
-    s = s.replace(",", "X").replace(".", ",").replace("X", ".")
+    # Formato CLP sin decimales
+    s = f"{val:,.0f}"       # 1,234,567
+    s = s.replace(",", ".")  # 1.234.567
     return f"$ {s}"

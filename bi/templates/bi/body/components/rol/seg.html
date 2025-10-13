@@ -1,31 +1,117 @@
 {% load static %}
 
-<h5 class="mt-4">Permisos del sistema</h5>
-<table class="table table-sm table-bordered align-middle">
-    <thead class="table-light">
-        <tr>
-            <th>Usuario</th>
-            <th>Rol</th>
-            <th>Permisos</th>
-            <th>Acción</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for u in all_Usuarios %}
-        <tr>
-            <td>{{ u.username }}</td>
-            <td>{{ u.profile.rol }}</td>
-            <td>{{ u.permissions|join:", " }}</td>
-            <td>
-                <button class="btn btn-sm btn-outline-primary">Editar</button>
-                <button class="btn btn-sm btn-outline-danger">Revocar</button>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="4" class="text-center text-muted">No hay usuarios asignados.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<button class="btn btn-success btn-sm">Agregar usuario al sistema</button>
+<div class="d-flex justify-content-between align-items-center my-4">
+    <h5 class="mt-0">Permisos del sistema</h5>
+    <!-- Botón para abrir el modal -->
+    <button class="btn btn-success btn-sm ms-3" data-bs-toggle="modal" data-bs-target="#userModal" onclick="abrirModalAgregar()">
+        Agregar usuario
+    </button>
+</div>
+
+<div class="table-responsive" id="usuariosContainer" data-rows="{{ rows_per_page }}">
+    <table id="usuariosTable" class="table table-sm table-bordered align-middle text-center mx-auto">
+        <thead class="table-light">
+            <tr>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Permisos</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in all_Usuarios %}
+            <tr class="usuario-row">
+                <td>{{ u.username }}</td>
+                <td>{{ u.profile.rol }}</td>
+                <td>
+                    {% for g in u.groups.all %}
+                    {{ g.name }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </td>
+                <td class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#userModal"
+                        style="width: 40%"
+                        onclick="abrirModalEditar('{{ u.id }}', '{{ u.username }}', '{{user.first_name}}', '{{ u.email }}', '{{ u.profile.rol.id }}', '{{ u.profile.avatar.url }}')">
+                        Editar
+                    </button>
+                    <form action="{% url 'deleteUser' u.id %}" method="POST" style="display:inline; width: 40%">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger" style="width: 100%">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Botones de navegación centrados -->
+<div class="d-flex justify-content-center gap-2 my-2">
+    <button id="prevBtn" class="btn btn-sm btn-outline-secondary">Anterior</button>
+    <button id="nextBtn" class="btn btn-sm btn-outline-secondary">Siguiente</button>
+</div>
+
+
+<!-- Modal de Bootstrap -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="userForm" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">Agregar nuevo usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="form-floating mb-3">
+                        <input type="text" name="username" class="form-control" id="modalUsername" placeholder=""
+                            required>
+                        <label for="modalUsername">Usuario</label>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input type="email" name="correo" class="form-control" id="modalCorreo" placeholder="" required>
+                        <label for="modalCorreo">Correo</label>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input type="text" name="nombre" class="form-control" id="modalCorreo" placeholder="" required>
+                        <label for="modalNombre">Nombre Completo</label>
+                    </div>
+
+                    <div class="form-floating mb-3 position-relative">
+                        <input type="password" name="contrasena" class="form-control" id="modalPassword" placeholder=""
+                            required>
+                        <label for="modalPassword">Contraseña</label>
+                        <span class="position-absolute top-50 end-0 translate-middle-y pe-3 cursor-pointer"
+                            onclick="verPassword('modalPassword','modalEye')">
+                            <i id="modalEye" class="fa fa-eye text-secondary"></i>
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modalRol" class="form-label">Rol</label>
+                        <select name="rol" id="modalRol" class="form-select" required>
+                            <option value="" disabled selected>Seleccione un rol</option>
+                            {% for r in all_roles %}
+                            <option value="{{ r.id }}">{{ r.rolName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modalAvatar" class="form-label">Avatar</label>
+                        <input type="file" name="avatar" id="modalAvatar" accept="image/*" class="form-control">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success btn-sm" id="modalSubmit">Guardar usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script src="{% static 'bi/js/rol/jsSeg.js'%}"></script>

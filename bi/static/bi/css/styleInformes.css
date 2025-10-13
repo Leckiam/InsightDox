@@ -1,0 +1,43 @@
+/* styleInformes.css */
+.card {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.btn-outline-custom {
+    border-color: #d84905;
+    color: #d84905;
+}
+
+.btn-outline-custom:hover {
+    background-color: #d84905;
+    color: #fff;
+}
+
+.btn-custom {
+    background-color: #383838;
+    border-color: #000000;
+    color: #ffffff;
+}
+
+.btn-custom:hover {
+    background-color: #484848;
+    border-color: #181818;
+    color: #ffffff;
+}
+
+.btn-filtrar-custom {
+    background-color: #d84905 !important;
+    border-color: #d84905 !important;
+    color: #ffffff;
+}
+
+.btn-filtrar-custom:hover {
+    background-color: #b93e05 !important;
+    color: #fff !important;
+}

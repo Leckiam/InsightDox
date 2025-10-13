@@ -5,13 +5,14 @@
 
 {% block statics %}
 <link rel="stylesheet" href="{% static 'bi/css/stylePerfil.css'%}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 {% endblock %}
 
 {% block classBody %}
 {% endblock %}
 
 {% block classDiv %}
-
+class="main-content"
 {% endblock %}
 
 {% block contenido %}
@@ -22,7 +23,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center gap-3">
             <div class="avatar-container">
-              <img src="{{ user.profile.avatar.url }}" alt="avatar" class="avatar">
+              <img src="{% if user.profile.avatar %}{{ user.profile.avatar.url }} {% endif %}" alt="avatar" class="avatar">
               <div class="edit-overlay" data-bs-toggle="modal" data-bs-target="#editAvatarModal">
                 <i class="bi bi-pencil-square fs-3"></i>
               </div>
@@ -75,7 +76,7 @@
         </div>
         <div class="modal-body text-center">
           <!-- Imagen actual -->
-          <img id="avatarPreview" src="{{ user.profile.avatar.url }}" class="rounded-circle mb-3" width="120"
+          <img id="avatarPreview" src="{% if user.profile.avatar %}{{ user.profile.avatar.url }} {% endif %}" class="rounded-circle mb-3" width="120"
             height="120" style="object-fit: cover;">
           <div class="mb-3">
             <input class="form-control" type="file" id="id_avatar" name="avatar" accept="image/*"
