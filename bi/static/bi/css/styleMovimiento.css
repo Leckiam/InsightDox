@@ -1,0 +1,10 @@
+.btn-filtrar-custom {
+    background-color: #d84905 !important;
+    border-color: #d84905 !important;
+    color: #ffffff;
+}
+
+.btn-filtrar-custom:hover {
+    background-color: #b93e05 !important;
+    color: #fff !important;
+}

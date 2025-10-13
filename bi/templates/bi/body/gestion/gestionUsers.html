@@ -1,0 +1,32 @@
+{% extends "bi/base.html" %}
+{% load static %}
+{% load currency %}
+
+{% block titulo %} Inicio {% endblock %}
+
+{% block statics %}
+{% endblock %}
+
+{% block classBody %}
+{% endblock %}
+
+{% block classDiv %}
+class="main-content"
+{% endblock %}
+
+{% block contenido %}
+<main class="container py-3">
+    <div class="row g-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    {% if user.profile.rol.codigo == "SEG" %}
+                    {% include "bi/body/components/rol/seg.html" %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+{% endblock %}
