@@ -138,6 +138,7 @@ def addUser(request):
     if request.method == "POST" and request.user.profile.rol.codigo == "SEG":
         username_tmp = request.POST.get("username")
         email_tmp = request.POST.get("correo")
+        nombre_tmp = request.POST.get("nombre")
         password_tmp = request.POST.get("contrasena")
         rolID_tmp = request.POST.get("rol")
         avatar_tmp = request.FILES.get("avatar")
@@ -160,7 +161,8 @@ def addUser(request):
             else:
                 user_tmp = User.objects.create_user(email=email_tmp,
                                             username=username_tmp,
-                                            password=password_tmp)
+                                            password=password_tmp,
+                                            first_name=nombre_tmp)
                 addProfile(user_tmp,avatar_tmp,rolID_tmp)
         except:
             print('Fallo el agregar Usuario')
@@ -185,6 +187,7 @@ def deleteUser(request,id):
 def editUser(request,id):
     if request.method == "POST" and request.user.profile.rol.codigo == "SEG":
         password_tmp = request.POST.get("contrasena")
+        nombre_tmp = request.POST.get("nombre")
         rolID_tmp = request.POST.get("rol")
         avatar_tmp = request.FILES.get("avatar")
         
@@ -206,9 +209,12 @@ def editUser(request,id):
                         update = True
                 if password_tmp:
                     user_tmp.set_password(password_tmp)
-                    user_tmp.save()
+                    update = True
+                if nombre_tmp:
+                    user_tmp.first_name = nombre_tmp
                     update = True
                 if update:
+                    user_tmp.save()
                     print( "Usuario editado correctamente")
                 else:
                     print('No se realizaron cambios al Usuario')
@@ -381,3 +387,17 @@ def gestMovEco(request):
         "annos": annos
     }
     return render(request, urlBase+"gestion/registroMovEco.html", context)
+
+@login_required
+def dashboard(request):
+    context={
+        "data":{
+            "kpi_03":obtenerKpis.obtKpi_03(),
+            "kpi_04":obtenerKpis.obtKpi_04(),
+            "kpi_05":obtenerKpis.obtKpi_05(),
+            "kpi_06":obtenerKpis.obtKpi_06(),
+            "kpi_07":obtenerKpis.obtKpi_07(),
+            "kpi_08":obtenerKpis.obtKpi_08()
+        }
+    }
+    return render(request, urlBase+"dashboard.html", context)

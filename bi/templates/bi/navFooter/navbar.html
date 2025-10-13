@@ -38,16 +38,9 @@
                 </li>
             {% endif %}
 
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle text-white" href="#" id="dashboardsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Dashboards
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="dashboardsDropdown">
-                    <li><a class="dropdown-item" href="#">Ventas</a></li>
-                    <li><a class="dropdown-item" href="#">Gastos</a></li>
-                    <li><a class="dropdown-item" href="#">Remuneraciones</a></li>
-                </ul>
-            </li>
+            <li class="nav-item">
+                    <a class="nav-link text-white" href="{% url 'dashboard' %}">Dashboard</a>
+                </li>
 
             <!-- Opciones de usuario para móvil -->
             <li class="nav-item d-lg-none">

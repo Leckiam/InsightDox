@@ -18,4 +18,5 @@ urlpatterns = [
     path('gestInformes/', views.gestInformes, name='gestInformes'),
     path('editObservacion/<int:id>/', views.editObservacion, name='editObservacion'),
     path('gestMovEco/', views.gestMovEco, name='gestMovEco'),
+    path('dashboard/', views.dashboard, name='dashboard'),
 ]
