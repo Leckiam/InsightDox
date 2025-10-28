@@ -35,7 +35,7 @@ function valLogin(email, password) {
         mostrarError(1);
         estado = false;
     }
-    if (!(password.value.length >= 6 && password.value.length < 150)) {
+    if (!(password.value.trim().length !=0)) {
         mostrarError(2);
         estado = false;
     }

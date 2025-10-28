@@ -19,4 +19,5 @@ urlpatterns = [
     path('editObservacion/<int:id>/', views.editObservacion, name='editObservacion'),
     path('gestMovEco/', views.gestMovEco, name='gestMovEco'),
     path('dashboard/', views.dashboard, name='dashboard'),
+    path("consultar_ia/", views.consultar_ia, name="consultar_ia"),
 ]

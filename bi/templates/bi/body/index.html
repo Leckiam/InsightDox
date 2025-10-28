@@ -75,7 +75,7 @@ class="main-content"
                     {% if data.kpi_02 %}
                         <canvas id="gastosCategoriaChart"></canvas>
                     {% else %}
-                        <strong>Gastos por Categoría del Mes Actual - No existen datos</strong>
+                        <strong>Gastos por Categoría del Mes mas Actual - No existen datos</strong>
                     {% endif %}
                 </div>
             </div>
@@ -88,10 +88,10 @@ class="main-content"
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="fw-bold mb-3">Asistente IA</h5>
-                    <textarea class="form-control mb-3" rows="3"
+                    <textarea id="pregunta-ia" class="form-control mb-3" rows="3"
                         placeholder="Ej: ¿Qué tendencia se espera en ventas para el próximo trimestre?"></textarea>
-                    <button class="btn btn-primary">Consultar</button>
-                    <div class="mt-3 text-muted small">[Aquí aparecerá la respuesta de la IA]</div>
+                    <button id="btn-consultar" class="btn btn-primary">Consultar</button>
+                    <div id="respuesta-ia" class="mt-3 text-muted small">[Aquí aparecerá la respuesta de la IA]</div>
                 </div>
             </div>
         </div>
@@ -103,4 +103,5 @@ class="main-content"
 
 </main>
 <script src="{% static 'bi/js/jsIndexKPI.js' %}"></script>
+<script src="{% static 'bi/js/jsIndexIA.js' %}"></script>
 {% endblock %}

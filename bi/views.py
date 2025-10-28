@@ -82,9 +82,14 @@ def home(request):
             allInforme = InformeCostos.objects.all().order_by('-anio', '-mes')[:3]
             if InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).exists():
                 lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).order_by('-id').first()
+                print('1')
+            elif InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).exists():
+                lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).order_by('-id').first()
+                print(lastInform.resumen_ventas)
             else:
                 lastInform = InformeCostos()
-            
+                print('3')
+            print(obtenerKpis.obtKpi_02())
             context={
                 "all_Informes": allInforme,
                 "ultimo_Informe": lastInform,
@@ -240,35 +245,34 @@ def addInformeCosto(request):
     if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
         informe_excel = request.FILES['archivo_informe']
         df = lecturaxlsx.procesar_informe(informe_excel)
-        
+        print('bueno 1')
         url='https://storage.googleapis.com/mi-bucket/informes/'
         mes,anno = lecturaxlsx.obtenerMesAnno(df)
+        print('bueno 2')
         
         df_ventas = df[df['Categoria'] == 'EdP']
         df_remuneracion = df[df['Categoria'] == 'MO']
         df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
         
-        try:
-            informe, created = InformeCostos.objects.get_or_create(
-                usuario=request.user,
-                mes=mes,
-                anio=anno,
-                defaults={
-                    'archivo_url': f'{url}{anno}/{mes}/Informe_{anno}_{mes}.xlsx',
-                    'filas_detectadas': len(df),
-                    'resumen_ventas': float(df_ventas['Total'].sum()),
-                    'resumen_gastos': float(df_gastos['Total'].sum()),
-                    'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
-                }
-            )
+        informe, created = InformeCostos.objects.get_or_create(
+            usuario=request.user,
+            mes=mes,
+            anio=anno,
+            defaults={
+                'archivo_url': f'{url}{anno}/{mes}/Informe_{anno}_{mes}.xlsx',
+                'filas_detectadas': len(df),
+                'resumen_ventas': float(df_ventas['Total'].sum()),
+                'resumen_gastos': float(df_gastos['Total'].sum()),
+                'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
+            }
+        )
 
-            # Solo cargar movimientos si se creó recién
-            if created:
-                lecturaxlsx.cargar_movimientos_desde_df(df, informe)
-            else:
-                print('El informe ya existe')
-        except:
-            print('No cumple con el formato')
+        # Solo cargar movimientos si se creó recién
+        if created:
+            lecturaxlsx.cargar_movimientos_desde_df(df, informe)
+            print('bueno 3')
+        else:
+            print('El informe ya existe')
         next_url = request.POST.get('next','home')
         return redirect(next_url)
     return redirect('home')
@@ -298,7 +302,7 @@ def gestInformes(request):
     else:
         annos = []
         
-    anno = request.GET.get('anno')
+    anno = request.GET.get('anno','')
     if anno:
         allInformes = allInformes.filter(anio=anno)
         anno = int(anno)
@@ -356,9 +360,9 @@ def gestMovEco(request):
     ]
 
     # --- FILTROS ---
-    tipo = request.GET.get('tipo')  # VE, GA, RE
-    mes = request.GET.get('mes')    # 1..12
-    anno = request.GET.get('anno')
+    tipo = request.GET.get('tipo', '')  # VE, GA, RE
+    mes = request.GET.get('mes', '')    # 1..12
+    anno = request.GET.get('anno', '')
     per_page = request.GET.get('per_page', 15)  # default 14 por página
 
     if tipo:
@@ -401,3 +405,36 @@ def dashboard(request):
         }
     }
     return render(request, urlBase+"dashboard.html", context)
+
+from rest_framework.decorators import api_view
+from .services.ai_agent import generar_respuesta,construir_indice,construir_prompt
+from django.http import StreamingHttpResponse
+
+@login_required
+@api_view(['POST'])
+def consultar_ia(request):
+    pregunta = request.data.get("pregunta")
+    
+    usuario_info = {
+        "nombre": request.user.first_name,
+        "username": request.user.username,
+        "correo": request.user.email,
+        "rol": request.user.profile.rol.rolName
+    }
+
+    # Construir índice y extraer contexto
+    index = construir_indice()
+
+    # Crear query engine usando tu LLM local
+    from llama_index.llms.ollama import Ollama
+    llm_local = Ollama(model="mistral:7b")
+
+    query_engine = index.as_query_engine(llm=llm_local)
+
+    # Obtener contexto
+    contexto = query_engine.query(pregunta)
+
+    # Construir prompt
+    prompt = construir_prompt(pregunta, usuario_info, contexto)
+    
+    return StreamingHttpResponse(generar_respuesta(prompt), content_type='text/plain')

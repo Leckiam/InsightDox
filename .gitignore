@@ -46,3 +46,7 @@ media/avatars/*
 
 # Excepto avatar por defecto
 !media/avatars/user_0_unknown.jpg
+
+#Datos Simulados
+DtSimulations/
+excel.py

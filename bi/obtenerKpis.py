@@ -44,13 +44,11 @@ def obtKpi_01():
     return [etiquetas, ventas_mensuales, gastos_mensuales]
 
 def obtKpi_02():
-    hoy = date.today()
-    anio_actual = hoy.year
-    mes_actual = hoy.month
-
+    ultimo_informe = InformeCostos.objects.order_by('-anio','-mes').first()
+    
     gastos = (
         MovimientoEconomico.objects
-        .filter(naturaleza='GA', fecha__year=anio_actual, fecha__month=mes_actual)
+        .filter(naturaleza='GA', fecha__year=ultimo_informe.anio, fecha__month=ultimo_informe.mes)
         .values('categoria')
         .annotate(total=Sum('total'))
         .order_by('categoria')

@@ -1,5 +1,6 @@
 # Framework base
 Django==5.2.6
+django-widget-tweaks==1.5.0
 
 # Variables de entorno
 python-decouple==3.8
@@ -34,3 +35,17 @@ openpyxl==3.1.5
 
 # Base de datos MariaDB/MySQL
 mysqlclient==2.2.4
+
+# IA / RAG (Retrieval-Augmented Generation)
+llama-index==0.10.26
+llama-index-llms-ollama==0.1.2
+llama-index-vector-stores-chroma==0.1.6
+llama-index-embeddings-huggingface
+llama-index-embeddings-langchain
+chromadb==0.4.24
+langchain==0.1.14
+
+# Soporte y análisis
+tqdm==4.66.2
+requests==2.31.0
+python-dotenv==1.0.1
