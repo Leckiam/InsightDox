@@ -1,6 +1,8 @@
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from decouple import config
+from django.core.mail import send_mail
 from django.db import transaction
 from datetime import date
 from django.contrib.auth.models import User
@@ -48,18 +50,21 @@ def recoverPass(request):
         return render(request,urlBase+'recoverPass.html')
     else:
         email = request.POST["emailRec"]
+        
         user = {
             'email':email,
         }
         '''
-        if (metApis.seguridadRecoverApi(email)):
-            return redirect(to='login')
-        else:
-            msg={
-                'e_login': email,
-            }
-            return render(request,urlBase+'recoverPass.html',msg)
+        if User.objects.filter(email=email).exists():
+            send_mail(
+                'Prueba de correo',
+                'Mensaje de prueba desde Django usando correo institucional con 2FA.',
+                config('E_MAIL_HOST_USER'),
+                [email],
+                fail_silently=False,
+            )
         '''
+
         msg={
             'e_login': email,
         }
@@ -82,14 +87,10 @@ def home(request):
             allInforme = InformeCostos.objects.all().order_by('-anio', '-mes')[:3]
             if InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).exists():
                 lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).order_by('-id').first()
-                print('1')
             elif InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).exists():
                 lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).order_by('-id').first()
-                print(lastInform.resumen_ventas)
             else:
                 lastInform = InformeCostos()
-                print('3')
-            print(obtenerKpis.obtKpi_02())
             context={
                 "all_Informes": allInforme,
                 "ultimo_Informe": lastInform,
@@ -245,10 +246,8 @@ def addInformeCosto(request):
     if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
         informe_excel = request.FILES['archivo_informe']
         df = lecturaxlsx.procesar_informe(informe_excel)
-        print('bueno 1')
         url='https://storage.googleapis.com/mi-bucket/informes/'
         mes,anno = lecturaxlsx.obtenerMesAnno(df)
-        print('bueno 2')
         
         df_ventas = df[df['Categoria'] == 'EdP']
         df_remuneracion = df[df['Categoria'] == 'MO']
@@ -270,7 +269,6 @@ def addInformeCosto(request):
         # Solo cargar movimientos si se creó recién
         if created:
             lecturaxlsx.cargar_movimientos_desde_df(df, informe)
-            print('bueno 3')
         else:
             print('El informe ya existe')
         next_url = request.POST.get('next','home')
@@ -431,8 +429,9 @@ def consultar_ia(request):
 
     query_engine = index.as_query_engine(llm=llm_local)
 
-    # Obtener contexto
-    contexto = query_engine.query(pregunta)
+    # Obtener el contexto más relevante de manera controlada
+    context_docs = query_engine.retrieve(pregunta)
+    contexto = "\n".join([doc.text for doc in context_docs])
 
     # Construir prompt
     prompt = construir_prompt(pregunta, usuario_info, contexto)

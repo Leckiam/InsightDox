@@ -13,7 +13,7 @@ function submitRec() {
 function valRecover(email) {
     estado = true;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!(email.value.length >= 5 && email.value.length < 150) || !emailRegex.test(email.value) || !email.value.includes("@fenixing.cl")) {
+    if (!(email.value.length >= 5 && email.value.length < 150) || !emailRegex.test(email.value)) {
         mostrarError(1);
         estado = false;
     }

@@ -58,10 +58,10 @@ def construir_prompt(pregunta_usuario, info_usuario, contexto):
     - Correo: {info_usuario['correo']}
     - Rol: {info_usuario['rol']}
 
-    Contexto financiero relevante:
+    Contexto relevante:
     {contexto}
 
     Pregunta: {pregunta_usuario}
-    Responde de manera clara y concisa:
+    Responde de manera clara, concisa y en Español:
     """
     return prompt

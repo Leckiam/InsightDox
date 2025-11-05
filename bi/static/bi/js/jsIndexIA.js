@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": getCookie('csrftoken')  // necesario si usas Django con CSRF
+                    "X-CSRFToken": getCookie('csrftoken')
                 },
                 body: JSON.stringify({ pregunta: pregunta })
             });
