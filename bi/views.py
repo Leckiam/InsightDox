@@ -1,6 +1,8 @@
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from decouple import config
+from django.core.mail import send_mail
 from django.db import transaction
 from datetime import date
 from django.contrib.auth.models import User
@@ -48,18 +50,21 @@ def recoverPass(request):
         return render(request,urlBase+'recoverPass.html')
     else:
         email = request.POST["emailRec"]
+        
         user = {
             'email':email,
         }
         '''
-        if (metApis.seguridadRecoverApi(email)):
-            return redirect(to='login')
-        else:
-            msg={
-                'e_login': email,
-            }
-            return render(request,urlBase+'recoverPass.html',msg)
+        if User.objects.filter(email=email).exists():
+            send_mail(
+                'Prueba de correo',
+                'Mensaje de prueba desde Django usando correo institucional con 2FA.',
+                config('E_MAIL_HOST_USER'),
+                [email],
+                fail_silently=False,
+            )
         '''
+
         msg={
             'e_login': email,
         }
@@ -82,9 +87,10 @@ def home(request):
             allInforme = InformeCostos.objects.all().order_by('-anio', '-mes')[:3]
             if InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).exists():
                 lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).order_by('-id').first()
+            elif InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).exists():
+                lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).order_by('-id').first()
             else:
                 lastInform = InformeCostos()
-            
             context={
                 "all_Informes": allInforme,
                 "ultimo_Informe": lastInform,
@@ -240,7 +246,6 @@ def addInformeCosto(request):
     if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
         informe_excel = request.FILES['archivo_informe']
         df = lecturaxlsx.procesar_informe(informe_excel)
-        
         url='https://storage.googleapis.com/mi-bucket/informes/'
         mes,anno = lecturaxlsx.obtenerMesAnno(df)
         
@@ -248,27 +253,24 @@ def addInformeCosto(request):
         df_remuneracion = df[df['Categoria'] == 'MO']
         df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
         
-        try:
-            informe, created = InformeCostos.objects.get_or_create(
-                usuario=request.user,
-                mes=mes,
-                anio=anno,
-                defaults={
-                    'archivo_url': f'{url}{anno}/{mes}/Informe_{anno}_{mes}.xlsx',
-                    'filas_detectadas': len(df),
-                    'resumen_ventas': float(df_ventas['Total'].sum()),
-                    'resumen_gastos': float(df_gastos['Total'].sum()),
-                    'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
-                }
-            )
+        informe, created = InformeCostos.objects.get_or_create(
+            usuario=request.user,
+            mes=mes,
+            anio=anno,
+            defaults={
+                'archivo_url': f'{url}{anno}/{mes}/Informe_{anno}_{mes}.xlsx',
+                'filas_detectadas': len(df),
+                'resumen_ventas': float(df_ventas['Total'].sum()),
+                'resumen_gastos': float(df_gastos['Total'].sum()),
+                'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
+            }
+        )
 
-            # Solo cargar movimientos si se creó recién
-            if created:
-                lecturaxlsx.cargar_movimientos_desde_df(df, informe)
-            else:
-                print('El informe ya existe')
-        except:
-            print('No cumple con el formato')
+        # Solo cargar movimientos si se creó recién
+        if created:
+            lecturaxlsx.cargar_movimientos_desde_df(df, informe)
+        else:
+            print('El informe ya existe')
         next_url = request.POST.get('next','home')
         return redirect(next_url)
     return redirect('home')
@@ -298,7 +300,7 @@ def gestInformes(request):
     else:
         annos = []
         
-    anno = request.GET.get('anno')
+    anno = request.GET.get('anno','')
     if anno:
         allInformes = allInformes.filter(anio=anno)
         anno = int(anno)
@@ -356,9 +358,9 @@ def gestMovEco(request):
     ]
 
     # --- FILTROS ---
-    tipo = request.GET.get('tipo')  # VE, GA, RE
-    mes = request.GET.get('mes')    # 1..12
-    anno = request.GET.get('anno')
+    tipo = request.GET.get('tipo', '')  # VE, GA, RE
+    mes = request.GET.get('mes', '')    # 1..12
+    anno = request.GET.get('anno', '')
     per_page = request.GET.get('per_page', 15)  # default 14 por página
 
     if tipo:
@@ -401,3 +403,37 @@ def dashboard(request):
         }
     }
     return render(request, urlBase+"dashboard.html", context)
+
+from rest_framework.decorators import api_view
+from .services.ai_agent import generar_respuesta,construir_indice,construir_prompt
+from django.http import StreamingHttpResponse
+
+@login_required
+@api_view(['POST'])
+def consultar_ia(request):
+    pregunta = request.data.get("pregunta")
+    
+    usuario_info = {
+        "nombre": request.user.first_name,
+        "username": request.user.username,
+        "correo": request.user.email,
+        "rol": request.user.profile.rol.rolName
+    }
+
+    # Construir índice y extraer contexto
+    index = construir_indice()
+
+    # Crear query engine usando tu LLM local
+    from llama_index.llms.ollama import Ollama
+    llm_local = Ollama(model="mistral:7b")
+
+    query_engine = index.as_query_engine(llm=llm_local)
+
+    # Obtener el contexto más relevante de manera controlada
+    context_docs = query_engine.retrieve(pregunta)
+    contexto = "\n".join([doc.text for doc in context_docs])
+
+    # Construir prompt
+    prompt = construir_prompt(pregunta, usuario_info, contexto)
+    
+    return StreamingHttpResponse(generar_respuesta(prompt), content_type='text/plain')

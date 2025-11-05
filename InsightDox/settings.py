@@ -145,3 +145,10 @@ SESSION_COOKIE_SECURE = False
 
 SESSION_COOKIE_AGE = 86400  
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # depende de tu proveedor
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('E_MAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('E_MAIL_HOST_PASSWORD')

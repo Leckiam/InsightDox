@@ -20,6 +20,8 @@ def procesar_informe(file_obj):
         
     columnas = ["N°", "Fecha", "Descripción", "Categoria", "Tipo", "Cantidad", "Unidad", "Precio unitario", "Total"]
     df = pd.DataFrame(data, columns=columnas)
+    for col in ['N°', 'Cantidad', 'Precio unitario', 'Total']:
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
     
     # Convertir columnas numéricas a enteros cuando corresponda
     for col in ['N°', 'Cantidad', 'Precio unitario', 'Total']:  # columnas numéricas
@@ -28,11 +30,10 @@ def procesar_informe(file_obj):
     return df
 
 def obtenerMesAnno(df):
-    df['Fecha'] = pd.to_datetime(df['Fecha'], errors='coerce')
-
-    mes = df['Fecha'].dt.month[0]
-    anno = df['Fecha'].dt.year[0]
-    return [mes,anno]
+    df['Fecha'] = pd.to_datetime(df['Fecha'], dayfirst=True, errors='coerce')
+    mes = int(df['Fecha'].dt.month[0])
+    anno = int(df['Fecha'].dt.year[0])
+    return [mes, anno]
 
 from .models import MovimientoEconomico, InformeCostos
 from datetime import datetime
@@ -46,33 +47,41 @@ def obtener_naturaleza(categoria):
         return 'GA'
 
 def cargar_movimientos_desde_df(df, informe):
-
+    print('Inicio carga movimientos')
     for _, row in df.iterrows():
-        fecha = pd.to_datetime(row["Fecha"]).date()
-        descripcion = str(row["Descripción"]).strip()
-        categoria = row["Categoria"]
-        naturaleza = obtener_naturaleza(categoria)
-        cantidad = int(row["Cantidad"]) if not pd.isna(row["Cantidad"]) else 0
-        unidad = str(row["Unidad"]).strip()
-        precio_unitario = int(row["Precio unitario"]) if not pd.isna(row["Precio unitario"]) else 0
+        try:
+            fecha = pd.to_datetime(row["Fecha"]).date()
+            descripcion = str(row["Descripción"]).strip()
+            categoria = row["Categoria"]
+            naturaleza = obtener_naturaleza(categoria)
+            cantidad = int(row["Cantidad"])
+            unidad = str(row["Unidad"]).strip()
+            precio_unitario = int(row["Precio unitario"])
+            nro = int(row["N°"])
 
-        mov, created = MovimientoEconomico.objects.get_or_create(
-            fecha=fecha,
-            descripcion=descripcion,
-            defaults={
-                "naturaleza": naturaleza,
-                "categoria": categoria,
-                "cantidad": cantidad,
-                "unidad": unidad,
-                "precio_unitario": precio_unitario,
-                "informe": informe,
-                "nro": int(row["N°"]) if "N°" in df.columns else 0,
-            }
-        )
-        if not created:
-            mov.cantidad = cantidad
-            mov.precio_unitario = precio_unitario
-            mov.unidad = unidad
-            mov.categoria = categoria
-            mov.naturaleza = naturaleza
-            mov.save()
+            print(f'Procesando: {descripcion} ({categoria})')
+
+            mov, created = MovimientoEconomico.objects.get_or_create(
+                fecha=fecha,
+                descripcion=descripcion,
+                defaults={
+                    "naturaleza": naturaleza,
+                    "categoria": categoria,
+                    "cantidad": cantidad,
+                    "unidad": unidad,
+                    "precio_unitario": precio_unitario,
+                    "informe": informe,
+                    "nro": nro
+                }
+            )
+
+            if not created:
+                mov.cantidad = cantidad
+                mov.precio_unitario = precio_unitario
+                mov.unidad = unidad
+                mov.categoria = categoria
+                mov.naturaleza = naturaleza
+                mov.save()
+
+        except Exception as e:
+            print(f"Error procesando fila N° {row['N°']}: {e}")
