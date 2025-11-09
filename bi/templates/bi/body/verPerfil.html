@@ -46,7 +46,7 @@ class="main-content"
           <h5 class="mt-4">Sistema asignado</h5>
           <p>Descripción del Rol: <strong>{{ user.profile.rol.descripcion }}</strong></p>
 
-          {% if user.profile.rol.codigo == "SEG" %}
+          {% if user.profile.rol.codigo == 'SEG' %}
             {% include "bi/body/components/rol/seg.html" %}
           {% endif %}
         </div>

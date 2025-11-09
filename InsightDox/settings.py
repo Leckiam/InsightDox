@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,7 +27,6 @@ SECRET_KEY = config("SECRET_KEY", default="inseguro")
 DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="").split(",")
-
 
 # Application definition
 
@@ -76,7 +76,7 @@ WSGI_APPLICATION = 'InsightDox.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': config('DB_NAME'),
+        'NAME': config('DB_NAME')+ ('_local' if DEBUG else ''),
         'USER': config('DB_USER'),
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST', default='localhost'),
@@ -118,18 +118,70 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Redirecciones de autenticación (login requerido, inicio tras login y salida)
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'login'
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-#Archivos estáticos y media
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / "static"]  # en desarrollo
-#STATIC_ROOT = BASE_DIR / "staticfiles"    # en producción
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / "media"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+if DEBUG:
+    #Archivos estáticos y media de forma local
+    STATIC_URL = '/static/'
 
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / "media"
+else:
+    # --- Configurar Ruta de Almacenamiento en GSC---
+
+    from google.oauth2 import service_account
+    import logging
+
+    GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+        config("GOOGLE_APPLICATION_CREDENTIALS")
+    )
+    GS_BUCKET_NAME = config("GS_BUCKET_NAME")
+
+    MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/media/"
+    STATIC_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/static/"
+    
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
+            "OPTIONS": {
+                "bucket_name": GS_BUCKET_NAME,
+                "credentials": GS_CREDENTIALS,
+                "location": "media",
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
+            "OPTIONS": {
+                "bucket_name": GS_BUCKET_NAME,
+                "credentials": GS_CREDENTIALS,
+                "location": "static",
+            },
+        },
+    }
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"Usando Google Cloud bucket: {GS_BUCKET_NAME}")
+    
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "console": {"class": "logging.StreamHandler"},
+        },
+        "root": {
+            "handlers": ["console"],
+            "level": "INFO",
+        },
+    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

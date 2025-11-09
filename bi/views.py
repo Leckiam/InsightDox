@@ -1,11 +1,11 @@
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from decouple import config
 from django.core.mail import send_mail
 from django.db import transaction
-from datetime import date
 from django.contrib.auth.models import User
+from datetime import date
+from decouple import config
 from .models import InformeCostos,Profile,Roles,MovimientoEconomico
 from . import lecturaxlsx,permisos,obtenerKpis
 
@@ -83,23 +83,25 @@ def home(request):
             hoy = date.today()
             anio_actual = hoy.year
             mes_actual = hoy.month
+            context=None
             
-            allInforme = InformeCostos.objects.all().order_by('-anio', '-mes')[:3]
-            if InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).exists():
-                lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).order_by('-id').first()
-            elif InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).exists():
-                lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).order_by('-id').first()
-            else:
-                lastInform = InformeCostos()
-            context={
-                "all_Informes": allInforme,
-                "ultimo_Informe": lastInform,
-                "balance": lastInform.resumen_ventas-(lastInform.resumen_gastos+lastInform.resumen_remuneraciones),
-                "data":{
-                    "kpi_01":obtenerKpis.obtKpi_01(),
-                    "kpi_02":obtenerKpis.obtKpi_02()
+            if InformeCostos.objects.exists():
+                allInforme = InformeCostos.objects.all().order_by('-anio', '-mes')[:3]
+                if InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).exists():
+                    lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).order_by('-id').first()
+                elif InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).exists():
+                    lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).order_by('-id').first()
+                else:
+                    lastInform = InformeCostos()
+                context={
+                    "all_Informes": allInforme,
+                    "ultimo_Informe": lastInform,
+                    "balance": lastInform.resumen_ventas-(lastInform.resumen_gastos+lastInform.resumen_remuneraciones),
+                    "data":{
+                        "kpi_01":obtenerKpis.obtKpi_01(),
+                        "kpi_02":obtenerKpis.obtKpi_02()
+                    }
                 }
-            }
         except Exception as e:
             print("Ocurrió un error:", e)
             context={
@@ -116,7 +118,7 @@ def perfil(request):
     else:
         context={}
         if request.user.profile.rol.codigo == "SEG":
-            allUsers = User.objects.all()
+            allUsers = User.objects.filter(is_superuser=False)
             allRoles = Roles.objects.all()
             context={
                 "all_Usuarios":allUsers,
@@ -172,7 +174,8 @@ def addUser(request):
                 addProfile(user_tmp,avatar_tmp,rolID_tmp)
         except:
             print('Fallo el agregar Usuario')
-    return redirect("perfil")  # Ajusta al nombre real de tu vista de perfil
+    next_url = request.GET.get('next', 'home')
+    return redirect(next_url)
 
 @login_required
 def deleteUser(request,id):
@@ -187,13 +190,16 @@ def deleteUser(request,id):
                 print("Usuario eliminado correctamente")
         except Exception as e:
             print(f"No se pudo eliminar el usuario: {e}")
-    return redirect("perfil")
+    next_url = request.GET.get('next', 'home')
+    return redirect(next_url)
 
 @login_required
 def editUser(request,id):
     if request.method == "POST" and request.user.profile.rol.codigo == "SEG":
-        password_tmp = request.POST.get("contrasena")
+        password1_tmp = request.POST.get("contrasena1")
+        password2_tmp = request.POST.get("contrasena2")
         nombre_tmp = request.POST.get("nombre")
+        apellido_tmp = request.POST.get("apellido")
         rolID_tmp = request.POST.get("rol")
         avatar_tmp = request.FILES.get("avatar")
         
@@ -213,12 +219,18 @@ def editUser(request,id):
                         codigo_rol = rolTmp.codigo
                         permisos.setPermisoUser(user_tmp,codigo_rol)
                         update = True
-                if password_tmp:
-                    user_tmp.set_password(password_tmp)
-                    update = True
                 if nombre_tmp:
                     user_tmp.first_name = nombre_tmp
                     update = True
+                if apellido_tmp:
+                    user_tmp.last_name = apellido_tmp
+                    update = True
+                if password1_tmp:
+                    if (password1_tmp == password2_tmp):
+                        user_tmp.set_password(password1_tmp)
+                        update = True
+                    else:
+                        update = False
                 if update:
                     user_tmp.save()
                     print( "Usuario editado correctamente")
@@ -226,12 +238,13 @@ def editUser(request,id):
                     print('No se realizaron cambios al Usuario')
         except Exception as e:
             print(f"No se pudo editar el usuario: {e}")
-    return redirect("perfil")
+    next_url = request.GET.get('next', 'home')
+    return redirect(next_url)
 
 @login_required
 def gestUsers(request):
     if request.user.profile.rol.codigo == "SEG":
-        allUsers = User.objects.all()
+        allUsers = User.objects.filter(is_superuser=False)
         allRoles = Roles.objects.all()
         context={
             "all_Usuarios":allUsers,
@@ -258,12 +271,18 @@ def addInformeCosto(request):
             mes=mes,
             anio=anno,
             defaults={
-                'archivo_url': f'{url}{anno}/{mes}/Informe_{anno}_{mes}.xlsx',
                 'filas_detectadas': len(df),
                 'resumen_ventas': float(df_ventas['Total'].sum()),
                 'resumen_gastos': float(df_gastos['Total'].sum()),
                 'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
             }
+        )
+        if informe.archivo_gcs:
+            informe.archivo_gcs.delete(save=False)
+        informe.archivo_gcs.save(
+            f"Informe_{anno}_{mes:02d}.xlsx",
+            informe_excel,
+            save=True
         )
 
         # Solo cargar movimientos si se creó recién
@@ -405,35 +424,23 @@ def dashboard(request):
     return render(request, urlBase+"dashboard.html", context)
 
 from rest_framework.decorators import api_view
-from .services.ai_agent import generar_respuesta,construir_indice,construir_prompt
+from .services import ai_agent,gcp_gsc
 from django.http import StreamingHttpResponse
 
 @login_required
 @api_view(['POST'])
 def consultar_ia(request):
-    pregunta = request.data.get("pregunta")
-    
-    usuario_info = {
-        "nombre": request.user.first_name,
-        "username": request.user.username,
-        "correo": request.user.email,
-        "rol": request.user.profile.rol.rolName
-    }
+    prompt=ai_agent.obtenerPrompt(request)
+    return StreamingHttpResponse(ai_agent.generar_respuesta(prompt), content_type='text/plain')
 
-    # Construir índice y extraer contexto
-    index = construir_indice()
+from django.conf import settings
 
-    # Crear query engine usando tu LLM local
-    from llama_index.llms.ollama import Ollama
-    llm_local = Ollama(model="mistral:7b")
-
-    query_engine = index.as_query_engine(llm=llm_local)
-
-    # Obtener el contexto más relevante de manera controlada
-    context_docs = query_engine.retrieve(pregunta)
-    contexto = "\n".join([doc.text for doc in context_docs])
-
-    # Construir prompt
-    prompt = construir_prompt(pregunta, usuario_info, contexto)
-    
-    return StreamingHttpResponse(generar_respuesta(prompt), content_type='text/plain')
+@login_required
+def descargar_informe(request, id):
+    informe = get_object_or_404(InformeCostos, id=id)
+    if settings.DEBUG:
+        url_archivo = informe.archivo_gcs.url
+        return redirect(url_archivo)
+    else:
+        signed_url = gcp_gsc.descargar_informe(request, id, informe)
+        return redirect(signed_url)

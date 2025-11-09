@@ -5,6 +5,7 @@
 {% block titulo %} Inicio {% endblock %}
 
 {% block statics %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 {% endblock %}
 
 {% block classBody %}
@@ -21,7 +22,7 @@ class="main-content"
             <div class="card shadow-sm">
                 <div class="card-body">
                     {% if user.profile.rol.codigo == "SEG" %}
-                    {% include "bi/body/components/rol/seg.html" %}
+                    {% include "bi/body/components/rol/seg_2.html" %}
                     {% endif %}
                 </div>
             </div>

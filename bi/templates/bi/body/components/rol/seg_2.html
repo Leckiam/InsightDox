@@ -16,7 +16,8 @@
                 <th>Usuario</th>
                 <th>Rol</th>
                 <th>Fecha Creaci&oacute;n</th>
-                <th>Acción</th>
+                <th>&Uacute;ltima conexi&oacute;n</th>
+                <th>Acci&oacute;n</th>
             </tr>
         </thead>
         <tbody>
@@ -26,13 +27,14 @@
                 <td>{{ u.username }}</td>
                 <td>{{ u.profile.rol }}</td>
                 <td>{{ user.date_joined }}</td>
+                <td>{{ user.last_login }}</td>
                 <td class="text-center" style="vertical-align: middle;">
                     <div class="d-inline-flex gap-2">
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#userModal"
                             onclick="abrirModalEditar('{{ u.id }}', '{{ u.username }}', '{{u.first_name}}', '{{u.last_name}}', '{{ u.email }}', '{{ u.profile.rol.id }}', '{{ u.profile.avatar.url }}')">
                             Editar
                         </button>
-                        <form action="{% url 'deleteUser' u.id %}?next=perfil" method="POST" style="display:inline;">
+                        <form action="{% url 'deleteUser' u.id %}?next=gestUsers" method="POST" style="display:inline;">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
                         </form>
