@@ -69,8 +69,8 @@
                         {% endif %}
                     </div>
 
-                    {% if informe.archivo_url %}
-                    <a href="{{ informe.archivo_url }}" target="_blank" class="btn btn-sm btn-custom mt-2">
+                    {% if informe.archivo_gcs %}
+                    <a href="{% url 'descargar_informe' informe.id %}" target="_blank" class="btn btn-sm btn-custom mt-2">
                         Ver Informe
                     </a>
                     {% endif %}

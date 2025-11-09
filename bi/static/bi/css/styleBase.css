@@ -53,3 +53,10 @@ html, body {
 .bg-footer-custom {
     background-color: #383838;
 }
+
+/* Toast */
+#errorToast {
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    font-weight: bold;
+    font-size: 0.9rem;
+}

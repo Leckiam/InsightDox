@@ -10,7 +10,9 @@
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             {{ informe.nombre }}
                             <div>
-                                <a class="btn btn-sm btn-outline-primary" href="{{ informe.archivo_url }}">Descargar</a>
+                                {% if informe.archivo_gcs %}
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'descargar_informe' informe.id %}" target="_blank">Descargar</a>
+                                {% endif %}
                                 {% if user.profile.rol.codigo == 'ADM' %}
                                 <form action="{% url 'eliminar_informe' informe.id %}" method="POST" style="display:inline;">
                                     {% csrf_token %}

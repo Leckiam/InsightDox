@@ -65,3 +65,31 @@ def construir_prompt(pregunta_usuario, info_usuario, contexto):
     Responde de manera clara, concisa y en Español:
     """
     return prompt
+
+def obtenerPrompt(request):
+    pregunta = request.data.get("pregunta")
+    
+    usuario_info = {
+        "nombre": request.user.first_name,
+        "username": request.user.username,
+        "correo": request.user.email,
+        "rol": request.user.profile.rol.rolName
+    }
+
+    # Construir índice y extraer contexto
+    index = construir_indice()
+
+    # Crear query engine usando tu LLM local
+    from llama_index.llms.ollama import Ollama
+    llm_local = Ollama(model="mistral:7b")
+
+    query_engine = index.as_query_engine(llm=llm_local)
+
+    # Obtener el contexto más relevante de manera controlada
+    context_docs = query_engine.retrieve(pregunta)
+    contexto = "\n".join([doc.text for doc in context_docs])
+
+    # Construir prompt
+    prompt = construir_prompt(pregunta, usuario_info, contexto)
+    
+    return prompt
