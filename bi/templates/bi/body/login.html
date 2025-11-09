@@ -34,7 +34,7 @@ class="d-flex align-items-center py-4 fondoLogin"
         <!-- Mensajes de error -->
         <ul class="list-unstyled bg-danger text-light rounded-2 p-2 mb-3" id="error-list" {% if not error1 %} style="display:none;" {% endif %}>
             <li id="e-correo" style="display:none;">E-mail debe tener estrucutra 'ejemplo@fenixing.cl'.</li>
-            <li id="e-password" style="display:none;">Contraseña fuera del rango de 6 a 150 letras.</li>
+            <li id="e-password" style="display:none;">Contraseña no puede estar vacia.</li>
             {% if error1 %}
             <li id="e-auth">{{ error1 }}</li>
             {% endif %}

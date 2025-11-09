@@ -34,16 +34,19 @@ def crear_datos_base(sender, **kwargs):
 
     from decouple import config
     # --- Crear usuario base ---
-    if not User.objects.filter(username=config('SEG_USER')).exists():
+    username_seg = config('SEG_USER')
+    if not User.objects.filter(username=username_seg).exists():
         User.objects.create_superuser(
-            username=config('SEG_USER'),
+            username=username_seg,
+            first_name=config('SEG_NAME'),
+            last_name=config('SEG_LAST_NAME'),
             email=config('SEG_EMAIL'),
             password=config('SEG_PASS')
         )
         print("Usuario Seguridad creado automáticamente")
     
     # --- Crear Perfil a Usuario base ---
-    user_seg=User.objects.get(username=config('SEG_USER'))
+    user_seg=User.objects.get(username=username_seg)
     rol_seg=Roles.objects.get(codigo='SEG')
     Profile.objects.get_or_create(
         user=user_seg,

@@ -48,11 +48,13 @@ class InformeCostos(models.Model):
         (9, "Septiembre"), (10, "Octubre"), (11, "Noviembre"), (12, "Diciembre"),
     ]
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    archivo_url = models.URLField(max_length=500, blank=True, null=True)
 
     nombre = models.CharField(max_length=255, editable=False)
     mes = models.PositiveIntegerField(choices=MESES_CHOICES,editable=False)
     anio = models.PositiveIntegerField(editable=False,verbose_name="Año",validators=[MinValueValidator(1980), MaxValueValidator(3000)])
+    
+    archivo_gcs = models.FileField(upload_to="informes/", blank=True, null=True)
+    
     fecha_subida = models.DateTimeField(auto_now_add=True)
     procesado = models.BooleanField(default=False)
 

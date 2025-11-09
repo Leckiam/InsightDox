@@ -1,9 +1,11 @@
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
 from django.db import transaction
-from datetime import date
 from django.contrib.auth.models import User
+from datetime import date
+from decouple import config
 from .models import InformeCostos,Profile,Roles,MovimientoEconomico
 from . import lecturaxlsx,permisos,obtenerKpis
 
@@ -48,22 +50,104 @@ def recoverPass(request):
         return render(request,urlBase+'recoverPass.html')
     else:
         email = request.POST["emailRec"]
-        user = {
-            'email':email,
-        }
-        '''
-        if (metApis.seguridadRecoverApi(email)):
-            return redirect(to='login')
-        else:
-            msg={
-                'e_login': email,
+        
+        # Buscar usuario por email
+        try:
+            user = User.objects.get(email=email)
+            
+            # Generar token de recuperación (simple implementación)
+            from django.contrib.auth.tokens import default_token_generator
+            from django.utils.http import urlsafe_base64_encode
+            from django.utils.encoding import force_bytes
+            
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            
+            # Crear URL de recuperación usando el host de la petición (robusto en desarrollo)
+            reset_url = f"{request.scheme}://{request.get_host()}/reset-password/{uid}/{token}/"
+            
+            # Enviar correo
+            subject = 'Recuperación de Contraseña - InsightDox'
+            message = f'''
+            Hola {user.first_name},
+            
+            Has solicitado recuperar tu contraseña en InsightDox.
+            
+            Por favor, haz clic en el siguiente enlace para restablecer tu contraseña:
+            {reset_url}
+            
+            Si no solicitaste este cambio, puedes ignorar este correo.
+            
+            Saludos,
+            El equipo de InsightDox
+            '''
+            
+            # Siempre usar backend de consola para evitar problemas SMTP
+            print(f"\n{'='*60}")
+            print(f"CORREO DE RECUPERACIÓN (Modo Desarrollo)")
+            print(f"{'='*60}")
+            print(f"Para: {email}")
+            print(f"Asunto: {subject}")
+            print(f"Mensaje:\n{message}")
+            print(f"{'='*60}\n")
+            
+            msg = {
+                'success': True,
+                'message': f'Correo de recuperación generado para {email}. En producción, se enviará a tu bandeja de entrada.',
+                'reset_url': reset_url
             }
-            return render(request,urlBase+'recoverPass.html',msg)
-        '''
-        msg={
-            'e_login': email,
-        }
+            
+        except User.DoesNotExist:
+            msg = {
+                'e_login': email,
+                'error': 'El correo ingresado no está registrado en el sistema. Por favor, verifica e intenta nuevamente.'
+            }
+        except Exception as e:
+            msg = {
+                'error': f'Ocurrió un error al enviar el correo: {str(e)}'
+            }
+            
         return render(request,urlBase+'recoverPass.html',msg)
+
+def reset_password_confirm(request, uidb64, token):
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.http import urlsafe_base64_decode
+    from django.utils.encoding import force_str
+    
+    try:
+        # Decodificar el UID
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            if new_password and confirm_password and new_password == confirm_password:
+                if len(new_password) >= 8:
+                    user.set_password(new_password)
+                    user.save()
+                    
+                    # Mensaje de éxito
+                    from django.contrib import messages
+                    messages.success(request, 'Tu contraseña ha sido restablecida exitosamente. Ahora puedes iniciar sesión con tu nueva contraseña.')
+                    return redirect('login')
+                else:
+                    error = 'La contraseña debe tener al menos 8 caracteres.'
+            else:
+                error = 'Las contraseñas no coinciden o están vacías.'
+        else:
+            error = None
+            
+        return render(request, urlBase + 'reset_password_confirm.html', {'error': error})
+    else:
+        # Token inválido o expirado
+        from django.contrib import messages
+        messages.error(request, 'El enlace de recuperación es inválido o ha expirado.')
+        return redirect('recover')
 
 def home(request):
     if request.user.is_authenticated:
@@ -78,22 +162,25 @@ def home(request):
             hoy = date.today()
             anio_actual = hoy.year
             mes_actual = hoy.month
+            context=None
             
-            allInforme = InformeCostos.objects.all().order_by('-anio', '-mes')[:3]
-            if InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).exists():
-                lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).order_by('-id').first()
-            else:
-                lastInform = InformeCostos()
-            
-            context={
-                "all_Informes": allInforme,
-                "ultimo_Informe": lastInform,
-                "balance": lastInform.resumen_ventas-(lastInform.resumen_gastos+lastInform.resumen_remuneraciones),
-                "data":{
-                    "kpi_01":obtenerKpis.obtKpi_01(),
-                    "kpi_02":obtenerKpis.obtKpi_02()
+            if InformeCostos.objects.exists():
+                allInforme = InformeCostos.objects.all().order_by('-anio', '-mes')[:3]
+                if InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).exists():
+                    lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual).order_by('-id').first()
+                elif InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).exists():
+                    lastInform = InformeCostos.objects.filter(anio=anio_actual, mes=mes_actual-1).order_by('-id').first()
+                else:
+                    lastInform = InformeCostos()
+                context={
+                    "all_Informes": allInforme,
+                    "ultimo_Informe": lastInform,
+                    "balance": lastInform.resumen_ventas-(lastInform.resumen_gastos+lastInform.resumen_remuneraciones),
+                    "data":{
+                        "kpi_01":obtenerKpis.obtKpi_01(),
+                        "kpi_02":obtenerKpis.obtKpi_02()
+                    }
                 }
-            }
         except Exception as e:
             print("Ocurrió un error:", e)
             context={
@@ -110,7 +197,7 @@ def perfil(request):
     else:
         context={}
         if request.user.profile.rol.codigo == "SEG":
-            allUsers = User.objects.all()
+            allUsers = User.objects.filter(is_superuser=False)
             allRoles = Roles.objects.all()
             context={
                 "all_Usuarios":allUsers,
@@ -166,7 +253,8 @@ def addUser(request):
                 addProfile(user_tmp,avatar_tmp,rolID_tmp)
         except:
             print('Fallo el agregar Usuario')
-    return redirect("perfil")  # Ajusta al nombre real de tu vista de perfil
+    next_url = request.GET.get('next', 'home')
+    return redirect(next_url)
 
 @login_required
 def deleteUser(request,id):
@@ -181,13 +269,16 @@ def deleteUser(request,id):
                 print("Usuario eliminado correctamente")
         except Exception as e:
             print(f"No se pudo eliminar el usuario: {e}")
-    return redirect("perfil")
+    next_url = request.GET.get('next', 'home')
+    return redirect(next_url)
 
 @login_required
 def editUser(request,id):
     if request.method == "POST" and request.user.profile.rol.codigo == "SEG":
-        password_tmp = request.POST.get("contrasena")
+        password1_tmp = request.POST.get("contrasena1")
+        password2_tmp = request.POST.get("contrasena2")
         nombre_tmp = request.POST.get("nombre")
+        apellido_tmp = request.POST.get("apellido")
         rolID_tmp = request.POST.get("rol")
         avatar_tmp = request.FILES.get("avatar")
         
@@ -207,12 +298,18 @@ def editUser(request,id):
                         codigo_rol = rolTmp.codigo
                         permisos.setPermisoUser(user_tmp,codigo_rol)
                         update = True
-                if password_tmp:
-                    user_tmp.set_password(password_tmp)
-                    update = True
                 if nombre_tmp:
                     user_tmp.first_name = nombre_tmp
                     update = True
+                if apellido_tmp:
+                    user_tmp.last_name = apellido_tmp
+                    update = True
+                if password1_tmp:
+                    if (password1_tmp == password2_tmp):
+                        user_tmp.set_password(password1_tmp)
+                        update = True
+                    else:
+                        update = False
                 if update:
                     user_tmp.save()
                     print( "Usuario editado correctamente")
@@ -220,12 +317,13 @@ def editUser(request,id):
                     print('No se realizaron cambios al Usuario')
         except Exception as e:
             print(f"No se pudo editar el usuario: {e}")
-    return redirect("perfil")
+    next_url = request.GET.get('next', 'home')
+    return redirect(next_url)
 
 @login_required
 def gestUsers(request):
     if request.user.profile.rol.codigo == "SEG":
-        allUsers = User.objects.all()
+        allUsers = User.objects.filter(is_superuser=False)
         allRoles = Roles.objects.all()
         context={
             "all_Usuarios":allUsers,
@@ -240,7 +338,6 @@ def addInformeCosto(request):
     if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
         informe_excel = request.FILES['archivo_informe']
         df = lecturaxlsx.procesar_informe(informe_excel)
-        
         url='https://storage.googleapis.com/mi-bucket/informes/'
         mes,anno = lecturaxlsx.obtenerMesAnno(df)
         
@@ -248,27 +345,30 @@ def addInformeCosto(request):
         df_remuneracion = df[df['Categoria'] == 'MO']
         df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
         
-        try:
-            informe, created = InformeCostos.objects.get_or_create(
-                usuario=request.user,
-                mes=mes,
-                anio=anno,
-                defaults={
-                    'archivo_url': f'{url}{anno}/{mes}/Informe_{anno}_{mes}.xlsx',
-                    'filas_detectadas': len(df),
-                    'resumen_ventas': float(df_ventas['Total'].sum()),
-                    'resumen_gastos': float(df_gastos['Total'].sum()),
-                    'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
-                }
-            )
+        informe, created = InformeCostos.objects.get_or_create(
+            usuario=request.user,
+            mes=mes,
+            anio=anno,
+            defaults={
+                'filas_detectadas': len(df),
+                'resumen_ventas': float(df_ventas['Total'].sum()),
+                'resumen_gastos': float(df_gastos['Total'].sum()),
+                'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
+            }
+        )
+        if informe.archivo_gcs:
+            informe.archivo_gcs.delete(save=False)
+        informe.archivo_gcs.save(
+            f"Informe_{anno}_{mes:02d}.xlsx",
+            informe_excel,
+            save=True
+        )
 
-            # Solo cargar movimientos si se creó recién
-            if created:
-                lecturaxlsx.cargar_movimientos_desde_df(df, informe)
-            else:
-                print('El informe ya existe')
-        except:
-            print('No cumple con el formato')
+        # Solo cargar movimientos si se creó recién
+        if created:
+            lecturaxlsx.cargar_movimientos_desde_df(df, informe)
+        else:
+            print('El informe ya existe')
         next_url = request.POST.get('next','home')
         return redirect(next_url)
     return redirect('home')
@@ -298,7 +398,7 @@ def gestInformes(request):
     else:
         annos = []
         
-    anno = request.GET.get('anno')
+    anno = request.GET.get('anno','')
     if anno:
         allInformes = allInformes.filter(anio=anno)
         anno = int(anno)
@@ -356,9 +456,9 @@ def gestMovEco(request):
     ]
 
     # --- FILTROS ---
-    tipo = request.GET.get('tipo')  # VE, GA, RE
-    mes = request.GET.get('mes')    # 1..12
-    anno = request.GET.get('anno')
+    tipo = request.GET.get('tipo', '')  # VE, GA, RE
+    mes = request.GET.get('mes', '')    # 1..12
+    anno = request.GET.get('anno', '')
     per_page = request.GET.get('per_page', 15)  # default 14 por página
 
     if tipo:
@@ -401,3 +501,25 @@ def dashboard(request):
         }
     }
     return render(request, urlBase+"dashboard.html", context)
+
+from rest_framework.decorators import api_view
+from .services import ai_agent,gcp_gsc
+from django.http import StreamingHttpResponse
+
+@login_required
+@api_view(['POST'])
+def consultar_ia(request):
+    prompt=ai_agent.obtenerPrompt(request)
+    return StreamingHttpResponse(ai_agent.generar_respuesta(prompt), content_type='text/plain')
+
+from django.conf import settings
+
+@login_required
+def descargar_informe(request, id):
+    informe = get_object_or_404(InformeCostos, id=id)
+    if settings.DEBUG:
+        url_archivo = informe.archivo_gcs.url
+        return redirect(url_archivo)
+    else:
+        signed_url = gcp_gsc.descargar_informe(request, id, informe)
+        return redirect(signed_url)

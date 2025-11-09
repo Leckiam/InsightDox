@@ -31,12 +31,34 @@ class="d-flex align-items-center py-4 fondoLogin"
 
         <h1 class="h4 mb-4 text-center fw-bold">Recuperar Contraseña</h1>
 
+        <!-- Mensajes de éxito -->
+        {% if success %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>¡Éxito!</strong> {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% if reset_url %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <strong>Enlace de restablecimiento (solo desarrollo):</strong>
+            <a class="text-decoration-underline" href="{{ reset_url }}">{{ reset_url }}</a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+        {% endif %}
+
         <!-- Mensajes de error -->
-        <ul class="list-unstyled bg-danger text-light rounded-2 p-2 mb-3" id="error-list"
-            style="{% if not e_login %}display:none{% endif %}">
-            <li id="e-email" style="display:none;">E-mail debe tener estrucutra 'ejemplo@fenixing.cl' </li>
+        {% if error %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error:</strong> {{ error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        <!-- Mensajes de validación -->
+        <ul class="list-unstyled bg-danger text-light rounded-2 p-2 mb-3" id="error-list" style="display:none;">
+            <li id="e-email" style="display:none;">El correo debe tener una estructura válida (ej: ejemplo@fenixing.cl)</li>
             {% if e_login %}
-            <li id="e-no-existe">El correo '{{e_login}}' no existe.</li>
+            <li id="e-no-existe">El correo '{{e_login}}' no está registrado en el sistema.</li>
             {% endif %}
         </ul>
 

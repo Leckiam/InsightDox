@@ -6,6 +6,7 @@ urlpatterns = [
     path('login', views.login_view,name='login'),
     path('logOut/', views.logOut,name='logOut'),
     path('recover/', views.recoverPass,name='recover'),
+    path('reset-password/<uidb64>/<token>/', views.reset_password_confirm, name='reset_password_confirm'),
     path('perfil/', views.perfil,name='perfil'),
     path("perfil/edit-avatar/", views.update_avatar, name="u_avatar"),
     path('dashboard/', views.dashboard,name='dashboard'),
@@ -19,4 +20,6 @@ urlpatterns = [
     path('editObservacion/<int:id>/', views.editObservacion, name='editObservacion'),
     path('gestMovEco/', views.gestMovEco, name='gestMovEco'),
     path('dashboard/', views.dashboard, name='dashboard'),
+    path("consultar_ia/", views.consultar_ia, name="consultar_ia"),
+    path("descargar_informe/<int:id>/", views.descargar_informe, name="descargar_informe"),
 ]

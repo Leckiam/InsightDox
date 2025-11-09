@@ -2,18 +2,21 @@ function submitRec() {
     buttonDisabled(true, 'btnSubmit');
     ocultarError();
 
-    const email = document.getElementsByName("emailRec")[0];
+    // Obtener el campo emailRec correcto
+    const email = document.getElementsByName("emailRec")[0]; 
     
     if (!valRecover(email)) {
-        event.preventDefault();
+        event.preventDefault(); // event.preventDefault() debe estar aquí
         buttonDisabled(false, 'btnSubmit');
-        return;
+        return; // Detiene el envío
     }
+    
+    return true; // Permitir el envío del formulario
 }
 function valRecover(email) {
     estado = true;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!(email.value.length >= 5 && email.value.length < 150) || !emailRegex.test(email.value) || !email.value.includes("@fenixing.cl")) {
+    if (!(email.value.length >= 5 && email.value.length < 150) || !emailRegex.test(email.value)) {
         mostrarError(1);
         estado = false;
     }

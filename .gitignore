@@ -10,6 +10,7 @@ Thumbs.db
 *.log
 *.tmp
 *.swp
+staticfiles/
 
 # Entornos virtuales y dependencias
 .venv/
@@ -31,6 +32,7 @@ obj/
 *.pem
 *.key
 *.crt
+config/credentials/
 
 # Bases de datos y backups
 *.sql
@@ -42,7 +44,11 @@ __pycache__/
 *.py[cod]
 
 # Ignorar todas las imágenes en media/avatars
-media/avatars/*
+media/*
 
 # Excepto avatar por defecto
 !media/avatars/user_0_unknown.jpg
+
+#Datos Simulados
+DtSimulations/
+excel.py

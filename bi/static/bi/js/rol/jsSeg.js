@@ -1,3 +1,20 @@
+
+function obtenerNamePage(){
+    const path = window.location.pathname;
+    const segmentos = path.split("/").filter(Boolean);
+    const ultimo = segmentos[segmentos.length - 1];
+    if (ultimo == 'perfil'){
+        name_page='perfil';
+    } else if (ultimo == 'gestUsers'){
+        name_page='gestUsers';
+    } else {
+        name_page = 'home';
+    }
+    return name_page;
+}
+name_page = obtenerNamePage()
+
+
 function verPassword(inputId, iconId) {
     const pwd = document.getElementById(inputId);
     const icon = document.getElementById(iconId);
@@ -15,17 +32,21 @@ function verPassword(inputId, iconId) {
 // --- Modal para agregar usuario ---
 function abrirModalAgregar() {
     document.getElementById('userModalLabel').innerText = "Agregar nuevo usuario";
-    document.getElementById('userForm').action = "/addUser/"; // o usa {% url 'addUser' %} en el HTML
+    document.getElementById('userForm').action = `/addUser/?next=${name_page}`;
 
     // Limpiar inputs
     document.getElementById('modalUsername').value = "";
     document.getElementById('modalUsername').disabled = false;
     document.getElementById('modalNombre').value = "";
     document.getElementById('modalNombre').required = true
+    document.getElementById('modalApellido').value = "";
+    document.getElementById('modalApellido').required = true
     document.getElementById('modalCorreo').value = "";
     document.getElementById('modalCorreo').disabled = false;
-    document.getElementById('modalPassword').value = "";
-    document.getElementById('modalPassword').required = true
+    document.getElementById('modalPassword1').value = "";
+    document.getElementById('modalPassword1').required = true
+    document.getElementById('modalPassword2').value = "";
+    document.getElementById('modalPassword2').required = true
     document.getElementById('modalRol').value = "";
     document.getElementById('modalAvatar').value = "";
 
@@ -35,26 +56,49 @@ function abrirModalAgregar() {
 }
 
 // --- Modal para editar usuario ---
-function abrirModalEditar(id, username,nombre, correo, rolId, avatar_url) {
+function abrirModalEditar(id, username,nombre,apellido, correo, rolId, avatar_url) {
     document.getElementById('userModalLabel').innerText = "Editar usuario";
-    document.getElementById('userForm').action = `/editUser/${id}/`;
+    document.getElementById('userForm').action = `/editUser/${id}/?next=${name_page}`;
 
     document.getElementById('modalUsername').value = username;
     document.getElementById('modalUsername').disabled = true;
     document.getElementById('modalNombre').value = nombre;
     document.getElementById('modalNombre').required = false
+    document.getElementById('modalApellido').value = apellido;
+    document.getElementById('modalApellido').required = false
     document.getElementById('modalCorreo').value = correo;
     document.getElementById('modalCorreo').disabled = true;
-    document.getElementById('modalPassword').value = "";
-    document.getElementById('modalPassword').required = false
+    document.getElementById('modalPassword1').value = "";
+    document.getElementById('modalPassword1').required = false
+    document.getElementById('modalPassword2').value = "";
+    document.getElementById('modalPassword2').required = false
     document.getElementById('modalRol').value = rolId;
     document.getElementById('modalAvatar').value = "";
 
-    // También puedes actualizar la vista previa si tienes el avatar actual del usuario
     const avatarPreview = document.getElementById('avatarPreview');
     if (avatarPreview && correo) {
-        avatarPreview.src = avatar_url; // Ejemplo, ajusta según tu modelo
+        avatarPreview.src = avatar_url;
     }
+}
+
+function mostrarToastError(mensaje) {
+    const toastEl = document.getElementById('errorToast');
+    toastEl.querySelector('.toast-body').textContent = mensaje;
+
+    const toast = new bootstrap.Toast(toastEl, { delay: 4000 }); 
+    toast.show();
+}
+
+function validarPasswords(event) {
+    const pass1 = document.getElementById('modalPassword1').value.trim();
+    const pass2 = document.getElementById('modalPassword2').value.trim();
+
+    if (pass1 !== pass2) {
+        event.preventDefault();
+        mostrarToastError("Las contraseñas no coinciden");
+        return false;
+    }
+    return true;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -71,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
             row.style.display = (index >= start && index < end) ? '' : 'none';
         });
         document.getElementById('prevBtn').disabled = page === 1;
-        document.getElementById('nextBtn').disabled = page === totalPages;
+        document.getElementById('nextBtn').disabled = totalPages === 0 || page === totalPages;
     }
 
     showPage(currentPage);

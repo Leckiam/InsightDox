@@ -1,0 +1,95 @@
+from llama_index.core import VectorStoreIndex, Document
+from llama_index.vector_stores.chroma import ChromaVectorStore
+from llama_index.core.storage import StorageContext
+from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+import chromadb
+import pandas as pd
+from ..models import MovimientoEconomico
+
+import requests
+import json
+
+url="http://localhost:11434/api/generate"
+
+def generar_respuesta(pregunta):
+    data = {
+        "model": "mistral:7b",
+        "prompt": pregunta,
+        "stream": True
+    }
+    with requests.post(url, json=data, stream=True) as response:
+        for line in response.iter_lines():
+            if line:
+                try:
+                    token_data = json.loads(line.decode("utf-8"))
+                    if "response" in token_data:
+                        yield token_data["response"]
+                except:
+                    continue
+
+def construir_indice():
+    client = chromadb.Client()
+    chroma_collection = client.get_or_create_collection("movimientos")
+    vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
+    storage_context = StorageContext.from_defaults(vector_store=vector_store)
+
+    df = pd.DataFrame(list(MovimientoEconomico.objects.all().values(
+        'descripcion', 'categoria', 'naturaleza', 'cantidad', 'unidad',
+        'precio_unitario', 'total', 'fecha', 'informe__observaciones'
+    )))
+    df.rename(columns={'informe__observaciones': 'observacion'}, inplace=True)
+
+    documentos = [
+        Document(
+            text=f"Descripción: {row['descripcion']}. Categoría: {row['categoria']}. "
+                 f"Total: {row['total']}. Observación: {row['observacion']}. Fecha: {row['fecha']}"
+        )
+        for _, row in df.iterrows()
+    ]
+
+    embed_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    index = VectorStoreIndex.from_documents(documentos, storage_context=storage_context, embed_model=embed_model)
+    return index
+
+def construir_prompt(pregunta_usuario, info_usuario, contexto):
+    prompt = f"""Información del usuario:
+    - Nombre: {info_usuario['nombre']}
+    - Username: {info_usuario['username']}
+    - Correo: {info_usuario['correo']}
+    - Rol: {info_usuario['rol']}
+
+    Contexto relevante:
+    {contexto}
+
+    Pregunta: {pregunta_usuario}
+    Responde de manera clara, concisa y en Español:
+    """
+    return prompt
+
+def obtenerPrompt(request):
+    pregunta = request.data.get("pregunta")
+    
+    usuario_info = {
+        "nombre": request.user.first_name,
+        "username": request.user.username,
+        "correo": request.user.email,
+        "rol": request.user.profile.rol.rolName
+    }
+
+    # Construir índice y extraer contexto
+    index = construir_indice()
+
+    # Crear query engine usando tu LLM local
+    from llama_index.llms.ollama import Ollama
+    llm_local = Ollama(model="mistral:7b")
+
+    query_engine = index.as_query_engine(llm=llm_local)
+
+    # Obtener el contexto más relevante de manera controlada
+    context_docs = query_engine.retrieve(pregunta)
+    contexto = "\n".join([doc.text for doc in context_docs])
+
+    # Construir prompt
+    prompt = construir_prompt(pregunta, usuario_info, contexto)
+    
+    return prompt
