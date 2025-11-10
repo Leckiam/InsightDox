@@ -1,10 +1,10 @@
 {% extends "bi/base.html" %}
-{% load static %}
+{% load static_version %}
 
 {% block titulo %} Recuperar Contraseña {% endblock %}
 
 {% block statics %}
-<link rel="stylesheet" href="{% static 'bi/css/styleLogin.css'%}">
+<link rel="stylesheet" href="{% static_version 'bi/css/styleLogin.css'%}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 {% endblock %}
 
@@ -25,18 +25,33 @@ class="d-flex align-items-center py-4 fondoLogin"
     <div class="card shadow-lg rounded-4 p-4 position-relative formLogin text-light">
         <!-- Contenedor del logo -->
         <div class="d-flex justify-content-center" style="margin-top:-50px;">
-            <img src="{% static 'bi/img/logo-fenix-ID.png'%}" alt="Logo Fenix" width="72"
+            <img src="{% static_version 'bi/img/logo-fenix-ID.png'%}" alt="Logo Fenix" width="72"
                 height="72" class="rounded-circle">
         </div>
 
         <h1 class="h4 mb-4 text-center fw-bold">Recuperar Contraseña</h1>
 
+        <!-- Mensajes de éxito -->
+        {% if success %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>¡Éxito!</strong> {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
         <!-- Mensajes de error -->
-        <ul class="list-unstyled bg-danger text-light rounded-2 p-2 mb-3" id="error-list"
-            style="{% if not e_login %}display:none{% endif %}">
-            <li id="e-email" style="display:none;">E-mail debe tener estrucutra 'ejemplo@fenixing.cl' </li>
+        {% if error %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error:</strong> {{ error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        <!-- Mensajes de validación -->
+        <ul class="list-unstyled bg-danger text-light rounded-2 p-2 mb-3" id="error-list" style="display:none;">
+            <li id="e-email" style="display:none;">El correo debe tener una estructura válida (ej: ejemplo@fenixing.cl)</li>
             {% if e_login %}
-            <li id="e-no-existe">El correo '{{e_login}}' no existe.</li>
+            <li id="e-no-existe">El correo '{{e_login}}' no está registrado en el sistema.</li>
             {% endif %}
         </ul>
 
@@ -59,5 +74,5 @@ class="d-flex align-items-center py-4 fondoLogin"
 {% endblock %}
 
 {% block footer %}
-<script src="{% static 'bi/js/jsRecover.js'%}"></script>
+<script src="{% static_version 'bi/js/jsRecover.js'%}"></script>
 {% endblock %}

@@ -1,50 +1,78 @@
-document.addEventListener("DOMContentLoaded", function () {
-    document.getElementById("btn-consultar").addEventListener("click", async () => {
-        const pregunta = document.getElementById("pregunta-ia").value;
-        const respuestaDiv = document.getElementById("respuesta-ia");
+document.addEventListener("DOMContentLoaded", () => {
+    const btnConsultar = document.getElementById("btn-consultar");
+    const inputPregunta = document.getElementById("pregunta-ia");
+    const respuestaDiv = document.getElementById("respuesta-ia");
 
-        // Limpiar respuesta anterior
-        respuestaDiv.textContent = "Cargando...";
+    btnConsultar.addEventListener("click", async () => {
+        const pregunta = inputPregunta.value.trim();
+        if (!pregunta) return;
+
+        respuestaDiv.textContent = "💭 Procesando pregunta...";
+        respuestaDiv.style.opacity = "0.7";
 
         try {
             const response = await fetch("/consultar_ia/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": getCookie('csrftoken')
+                    "X-CSRFToken": getCookie("csrftoken"),
                 },
-                body: JSON.stringify({ pregunta: pregunta })
+                body: JSON.stringify({ pregunta }),
             });
 
-            // Usar reader para leer streaming
-            const reader = response.body.getReader();
+            if (!response.ok || !response.body) {
+                throw new Error(`Error HTTP ${response.status}`);
+            }
+
             const decoder = new TextDecoder();
             let respuesta = "";
+            let buffer = "";
+            let lastUpdate = Date.now();
 
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                respuesta += decoder.decode(value);
-                respuestaDiv.textContent = respuesta;  // actualizar en tiempo real
+            // Usamos streaming nativo
+            const stream = response.body
+                .pipeThrough(new TextDecoderStream()) // decodifica binario -> texto
+                .getReader();
+
+            for await (const chunk of readStream(stream)) {
+                buffer += chunk;
+
+                // Actualiza texto cada 50–70 ms para fluidez
+                if (Date.now() - lastUpdate > 60) {
+                    respuesta += buffer;
+                    respuestaDiv.textContent = respuesta;
+                    buffer = "";
+                    lastUpdate = Date.now();
+                }
             }
-        } catch (error) {
-            console.error("Error:", error);
-            respuestaDiv.textContent = "Error al consultar la IA.";
+
+            // Finaliza
+            respuesta += buffer;
+            respuestaDiv.textContent = respuesta;
+            respuestaDiv.style.opacity = "1";
+        } catch (err) {
+            console.error("❌ Error en streaming:", err);
+            respuestaDiv.textContent = "⚠️ Error al consultar la IA. Solo se aceptan preguntas sobre los movimientos economicos";
         }
     });
 
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== "") {
-            const cookies = document.cookie.split(";");
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.startsWith(name + "=")) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+    // Helper moderno
+    async function* readStream(reader) {
+        try {
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                yield value;
             }
+        } finally {
+            reader.releaseLock();
         }
-        return cookieValue;
     }
-})
+
+    // Cookie CSRF
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return decodeURIComponent(parts.pop().split(";").shift());
+    }
+});

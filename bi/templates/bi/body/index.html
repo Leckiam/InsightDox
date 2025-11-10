@@ -1,5 +1,5 @@
 {% extends "bi/base.html" %}
-{% load static %}
+{% load static_version %}
 {% load currency %}
 
 {% block titulo %} Inicio {% endblock %}
@@ -102,6 +102,6 @@ class="main-content"
     {% include "bi/body/components/alertas.html" %}
 
 </main>
-<script src="{% static 'bi/js/jsIndexKPI.js' %}"></script>
-<script src="{% static 'bi/js/jsIndexIA.js' %}"></script>
+<script src="{% static_version 'bi/js/jsIndexKPI.js' %}"></script>
+<script src="{% static_version 'bi/js/jsIndexIA.js' %}"></script>
 {% endblock %}

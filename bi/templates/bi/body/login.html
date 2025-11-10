@@ -1,10 +1,10 @@
 {% extends "bi/base.html" %}
-{% load static %}
+{% load static_version %}
 
 {% block titulo %} Iniciar Sesión {% endblock %}
 
 {% block statics %}
-<link rel="stylesheet" href="{% static 'bi/css/styleLogin.css'%}">
+<link rel="stylesheet" href="{% static_version 'bi/css/styleLogin.css'%}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 {% endblock %}
 
@@ -25,7 +25,7 @@ class="d-flex align-items-center py-4 fondoLogin"
     <div class="card shadow-lg rounded-4 p-4 position-relative formLogin text-light">
         <!-- Contenedor del logo -->
         <div class="d-flex justify-content-center" style="margin-top:-50px;">
-            <img src="{% static 'bi/img/logo-fenix-ID.png'%}" alt="Logo Fenix" width="72" height="72"
+            <img src="{% static_version 'bi/img/logo-fenix-ID.png'%}" alt="Logo Fenix" width="72" height="72"
                 class="rounded-circle">
         </div>
 
@@ -69,5 +69,5 @@ class="d-flex align-items-center py-4 fondoLogin"
 {% endblock %}
 
 {% block footer %}
-<script src="{% static 'bi/js/jsLogin.js' %}"></script>
+<script src="{% static_version 'bi/js/jsLogin.js' %}"></script>
 {% endblock %}

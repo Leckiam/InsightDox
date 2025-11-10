@@ -1,95 +1,176 @@
-from llama_index.core import VectorStoreIndex, Document
-from llama_index.vector_stores.chroma import ChromaVectorStore
-from llama_index.core.storage import StorageContext
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
-import chromadb
+import requests, json
 import pandas as pd
+from . import mineriaDatos as md
 from ..models import MovimientoEconomico
 
-import requests
-import json
+def obtenerPromptMD(pregunta):
+    prompt = f"""
+    Eres un asistente que selecciona el método más adecuado para analizar movimientos económicos.
+    Devuelve SOLO un JSON con:
+    - accion: nombre del método a usar
+    - parametros: diccionario de filtros posibles (dia, mes, anio, tipo)
 
-url="http://localhost:11434/api/generate"
+    Parametro "mes" debe ser un tipo de dato int. Ej: "Enero" es 1
 
-def generar_respuesta(pregunta):
+    Tipo suele ser: VE = Ventas; GA = Gastos; RE = Remuneraciones
+    
+    Métodos disponibles: 
+    - cantidad_movimientos(dia=None, mes=None, anio=None): Devuelve el número total de movimientos registrados en el rango de fecha indicado.
+    - cantidad_movimientos_tipo(tipo, dia=None, mes=None, anio=None): Devuelve la cantidad de movimientos registrados por el tipo y por el rango de fecha indicado.
+    - categorias_disponibles(dia=None, mes=None, anio=None): Devuelve la lista de categorías únicas presentes en los movimientos del rango de fecha.
+    - categorias_por_tipo(tipo, dia=None, mes=None, anio=None) : Devuelve una lista de categorías distintas presentes en los movimientos del tipo especificado ('VE', 'GA' o 'RE') y rango de fecha indicado.
+    - cantidad_movimientos_por_categoria(dia=None, mes=None, anio=None): Devuelve un conteo de movimientos agrupados por categoría en el rango de fecha.
+    - resumen_numerico(dia=None, mes=None, anio=None): Devuelve estadísticas de los movimientos (promedio, mediana, moda, total más alto y total más bajo).
+    - movimiento_mas_reciente(dia=None, mes=None, anio=None): Devuelve el movimiento más reciente registrado en el rango de fecha.
+    - movimiento_mas_antiguo(dia=None, mes=None, anio=None): Devuelve el movimiento más antiguo registrado en el rango de fecha.
+    - precio_unitario_extremos(dia=None, mes=None, anio=None): Devuelve los movimientos con el precio unitario más alto y más bajo en el rango de fecha.
+    - total_extremos(dia=None, mes=None, anio=None): Devuelve los movimientos con el total más alto y más bajo en el rango de fecha.
+    - cantidad_extremos(dia=None, mes=None, anio=None): Devuelve los movimientos con la cantidad más alta y más baja en el rango de fecha.
+    - por_naturaleza(tipo, dia=None, mes=None, anio=None): Devuelve estadísticas de los movimientos filtrados por tipo ('VE', 'GA', 'RE'), incluyendo la cantidad de movimientos, el promedio del total, el total más alto y el total más bajo dentro del rango de fecha indicado.
+    - mayor_menor_por_tipo(tipo, dia=None, mes=None, anio=None): Devuelve los movimientos de un tipo específico ('VE', 'GA', 'RE') con total más alto y más bajo en el rango de fecha.
+
+    Pregunta: "{pregunta}"
+    """
+
+    return prompt
+
+def limpiar_null(d):
+    if isinstance(d, dict):
+        return {k: limpiar_null(v) for k, v in d.items() if v is not None}
+    elif isinstance(d, list):
+        return [limpiar_null(x) for x in d if x is not None]
+    else:
+        return d
+
+def interpretar_pregunta(pregunta):
+    url = "http://localhost:11434/api/generate"
     data = {
         "model": "mistral:7b",
-        "prompt": pregunta,
-        "stream": True
+        "prompt": obtenerPromptMD(pregunta),
+        "stream": False
     }
-    with requests.post(url, json=data, stream=True) as response:
-        for line in response.iter_lines():
-            if line:
-                try:
-                    token_data = json.loads(line.decode("utf-8"))
-                    if "response" in token_data:
-                        yield token_data["response"]
-                except:
-                    continue
+    response = requests.post(url, json=data)
+    respuesta = response.json().get("response", "")
 
-def construir_indice():
-    client = chromadb.Client()
-    chroma_collection = client.get_or_create_collection("movimientos")
-    vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
-    storage_context = StorageContext.from_defaults(vector_store=vector_store)
+    try:
+        # Intenta parsear el JSON devuelto
+        respuesta_json_valido = respuesta.replace("None", "null")
+        print(respuesta_json_valido)
+        return json.loads(respuesta_json_valido)
+    except Exception as e:
+        print(f"Error al parsear JSON: {e}")
+        print(f"Respuesta recibida: {repr(respuesta)}")
+        return {"accion": None, "parametros": {}}
 
+def ejecutar_accion(analizador, interpretacion):
+    accion = interpretacion.get("accion")
+    parametros = interpretacion.get("parametros", {})
+
+    if not hasattr(analizador, accion):
+        return {"error": f"Método '{accion}' no encontrado."}
+
+    metodo = getattr(analizador, accion)
+    return metodo(**parametros)
+
+import re
+import unicodedata
+
+def normalizar_pregunta(pregunta: str) -> str:
+    # Pasar a minúsculas
+    pregunta = pregunta.lower().strip()
+
+    # Quitar tildes y acentos
+    pregunta = ''.join(
+        c for c in unicodedata.normalize('NFD', pregunta)
+        if unicodedata.category(c) != 'Mn'
+    )
+
+    # Quitar signos de puntuación y caracteres especiales
+    pregunta = re.sub(r'[^a-z0-9áéíóúñü\s]', '', pregunta)
+
+    # Normalizar espacios
+    pregunta = re.sub(r'\s+', ' ', pregunta).strip()
+
+    # Reemplazar abreviaturas comunes
+    reemplazos = {
+        " sep ": "septiembre",
+        " ene ": "enero",
+        " feb ": "febrero",
+        " mar ": "marzo",
+        " abr ": "abril",
+        " ago ": "agosto",
+        " dic ": "diciembre",
+    }
+    for clave, valor in reemplazos.items():
+        pregunta = pregunta.replace(clave, valor)
+
+    return pregunta
+
+
+def generarRespuesta(request):
+    pregunta_tmp = request.data.get("pregunta", "").strip()
+    pregunta = normalizar_pregunta(pregunta_tmp)
+    
     df = pd.DataFrame(list(MovimientoEconomico.objects.all().values(
         'descripcion', 'categoria', 'naturaleza', 'cantidad', 'unidad',
         'precio_unitario', 'total', 'fecha', 'informe__observaciones'
     )))
     df.rename(columns={'informe__observaciones': 'observacion'}, inplace=True)
 
-    documentos = [
-        Document(
-            text=f"Descripción: {row['descripcion']}. Categoría: {row['categoria']}. "
-                 f"Total: {row['total']}. Observación: {row['observacion']}. Fecha: {row['fecha']}"
-        )
-        for _, row in df.iterrows()
-    ]
+    # Analizar
+    analizador = md.AnalizadorMovimientos(df)
+    interpretacion = interpretar_pregunta(pregunta)
+    resultado = ejecutar_accion(analizador, interpretacion)
+    print(resultado)
+    
+    # Crear prompt de redacción
+    prompt_respuesta = f"""
+    Eres un asistente contable que redacta respuestas breves y claras en español
+    basadas en los resultados del análisis de movimientos económicos.
 
-    embed_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    index = VectorStoreIndex.from_documents(documentos, storage_context=storage_context, embed_model=embed_model)
-    return index
+    Instrucciones:
+    - Redacta la respuesta en un solo enunciado claro y natural.
+    - Corrige cualquier error ortográfico o palabra mal escrita del usuario.
+    - No agregues contexto extra ni inventes información.
+    - Si hay filtros (día, mes, año, tipo), menciónalos naturalmente.
+    - Sé conciso (máximo 2 líneas).
+    - El dinero como total o precio_unitario siempres son pesos chilenos (usar $X.XXX CLP), no olvidar el separador de miles (usar '.' no ',').
 
-def construir_prompt(pregunta_usuario, info_usuario, contexto):
-    prompt = f"""Información del usuario:
-    - Nombre: {info_usuario['nombre']}
-    - Username: {info_usuario['username']}
-    - Correo: {info_usuario['correo']}
-    - Rol: {info_usuario['rol']}
+    Datos:
+    - Pregunta del usuario: "{pregunta}"
+    - Resultado del análisis: {resultado}
+    - Parámetros usados: {interpretacion.get('parametros', {})}
 
-    Contexto relevante:
-    {contexto}
+    Ejemplos:
+    - "En total hay 54 movimientos registrados en septiembre de 2025."
+    - "Durante 2024 se realizaron 120 movimientos de tipo venta (VE) en la Empresa Fenix Ingenieria y Servicios Ltda."
+    - "El total más alto registrado este mes fue de $2.500.000 CLP."
+    ---
 
-    Pregunta: {pregunta_usuario}
-    Responde de manera clara, concisa y en Español:
+    Escribe solo la respuesta final, sin notas ni marcas de fin.
     """
-    return prompt
-
-def obtenerPrompt(request):
-    pregunta = request.data.get("pregunta")
     
-    usuario_info = {
-        "nombre": request.user.first_name,
-        "username": request.user.username,
-        "correo": request.user.email,
-        "rol": request.user.profile.rol.rolName
-    }
+    # === Solicitud a phi3:mini (streaming) ===
+    url = "http://localhost:11434/api/generate"
+    data = {
+        "model": "phi3:mini",
+        "prompt": prompt_respuesta,
+        "stream": True
+        }
 
-    # Construir índice y extraer contexto
-    index = construir_indice()
+    texto_final = ""
 
-    # Crear query engine usando tu LLM local
-    from llama_index.llms.ollama import Ollama
-    llm_local = Ollama(model="mistral:7b")
-
-    query_engine = index.as_query_engine(llm=llm_local)
-
-    # Obtener el contexto más relevante de manera controlada
-    context_docs = query_engine.retrieve(pregunta)
-    contexto = "\n".join([doc.text for doc in context_docs])
-
-    # Construir prompt
-    prompt = construir_prompt(pregunta, usuario_info, contexto)
-    
-    return prompt
+    with requests.post(url, json=data, stream=True) as response:
+        for line in response.iter_lines():
+            if line:
+                try:
+                    token_data = json.loads(line.decode("utf-8"))
+                    if "response" in token_data:
+                        fragmento = token_data["response"]
+                        if "[FIN]" in fragmento:
+                            texto_final += fragmento.split("[FIN]")[0]
+                            break
+                        texto_final += fragmento
+                        yield fragmento
+                except json.JSONDecodeError:
+                    continue

@@ -1,10 +1,10 @@
 {% extends "bi/base.html" %}
-{% load static %}
+{% load static_version %}
 
 {% block titulo %} Ver Perfil {% endblock %}
 
 {% block statics %}
-<link rel="stylesheet" href="{% static 'bi/css/stylePerfil.css'%}">
+<link rel="stylesheet" href="{% static_version 'bi/css/stylePerfil.css'%}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 {% endblock %}
 
@@ -91,5 +91,5 @@ class="main-content"
     </div>
   </div>
 </div>
-<script src="{% static 'bi/js/jsPerfil.js'%}"></script>
+<script src="{% static_version 'bi/js/jsPerfil.js'%}"></script>
 {% endblock %}
