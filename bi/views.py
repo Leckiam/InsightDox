@@ -430,8 +430,7 @@ from django.http import StreamingHttpResponse
 @login_required
 @api_view(['POST'])
 def consultar_ia(request):
-    prompt=ai_agent.obtenerPrompt(request)
-    return StreamingHttpResponse(ai_agent.generar_respuesta(prompt), content_type='text/plain')
+    return StreamingHttpResponse(ai_agent.generarRespuesta(request), content_type='text/plain')
 
 from django.conf import settings
 

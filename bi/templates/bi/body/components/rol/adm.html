@@ -1,4 +1,4 @@
-{% load static %}
+{% load static_version %}
 
 <div class="col-md-6">
     <div class="card shadow-sm">
@@ -27,7 +27,7 @@
                 {% endif %}
             </ul>
             <div class="d-flex justify-content-between mt-3">
-                <a class="btn btn-outline-secondary" href="{% static 'bi/xlsx/Formato_InformeDeCostos.xlsx' %}" download>
+                <a class="btn btn-outline-secondary" href="{% static_version 'bi/xlsx/Formato_InformeDeCostos.xlsx' %}" download>
                     Descargar Formato de Informe
                 </a>
                 <!-- Botón que abre el modal -->
