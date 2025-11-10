@@ -5,7 +5,6 @@ from django.core.mail import send_mail
 from django.db import transaction
 from django.contrib.auth.models import User
 from datetime import date
-from decouple import config
 from .models import InformeCostos,Profile,Roles,MovimientoEconomico
 from . import lecturaxlsx,permisos,obtenerKpis
 
@@ -45,30 +44,104 @@ def logOut(request):
     logout(request)
     return redirect(to='login')
 
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from .services import oauth2
+
 def recoverPass(request):
     if request.method != "POST":
-        return render(request,urlBase+'recoverPass.html')
-    else:
-        email = request.POST["emailRec"]
+        return render(request, urlBase + 'recoverPass.html')
+    
+    email = request.POST.get("emailRec")
+    
+    try:
+        user = User.objects.get(email=email)
         
-        user = {
-            'email':email,
-        }
-        '''
-        if User.objects.filter(email=email).exists():
-            send_mail(
-                'Prueba de correo',
-                'Mensaje de prueba desde Django usando correo institucional con 2FA.',
-                config('E_MAIL_HOST_USER'),
-                [email],
-                fail_silently=False,
-            )
-        '''
+        # Generar token y UID
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        reset_url = f"{request.scheme}://{request.get_host()}/reset-password/{uid}/{token}/"
+        
+        subject = 'Recuperación de Contraseña - InsightDox'
+        message = f"""
+        Hola {user.first_name},
 
-        msg={
-            'e_login': email,
+        Has solicitado recuperar tu contraseña en InsightDox.
+
+        Por favor, haz clic en el siguiente enlace para restablecer tu contraseña:
+        {reset_url}
+
+        Si no solicitaste este cambio, puedes ignorar este correo.
+
+        Saludos,
+        El equipo de InsightDox
+"""
+        # --- Enviar correo usando Gmail API ---
+        oauth2.enviar_correo_gmail_api(email, subject, message)
+
+        msg = {
+            'success': True,
+            'message': f'Correo de recuperación enviado a {email}. Revisa tu bandeja de entrada.',
+            'reset_url': reset_url
         }
-        return render(request,urlBase+'recoverPass.html',msg)
+        
+    except User.DoesNotExist:
+        msg = {
+            'e_login': email,
+            'error': 'El correo ingresado no está registrado en el sistema. Por favor, verifica e intenta nuevamente.'
+        }
+    except Exception as e:
+        msg = {
+            'error': f'Ocurrió un error al enviar el correo: {str(e)}'
+        }
+    
+    return render(request, urlBase + 'recoverPass.html', msg)
+
+from django.contrib import messages
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
+
+def reset_password_confirm(request, uidb64, token):
+    """
+    Vista para restablecer la contraseña usando UID y token de recuperación.
+    """
+    try:
+        # Decodificar el UID
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        error = None
+        if request.method == 'POST':
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+
+            if not new_password or not confirm_password:
+                error = 'Las contraseñas no pueden estar vacías.'
+            elif new_password != confirm_password:
+                error = 'Las contraseñas no coinciden.'
+            elif len(new_password) < 8:
+                error = 'La contraseña debe tener al menos 8 caracteres.'
+            else:
+                # Guardar nueva contraseña
+                user.set_password(new_password)
+                user.save()
+                messages.success(
+                    request,
+                    'Tu contraseña ha sido restablecida exitosamente. Ahora puedes iniciar sesión con tu nueva contraseña.'
+                )
+                return redirect('login')
+
+        return render(request, urlBase + 'reset_password_confirm.html', {'error': error})
+    else:
+        # Token inválido o expirado
+        messages.error(request, 'El enlace de recuperación es inválido o ha expirado.')
+        return redirect('login')
 
 def home(request):
     if request.user.is_authenticated:
