@@ -199,9 +199,13 @@ SESSION_COOKIE_SECURE = False
 SESSION_COOKIE_AGE = 86400  
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # depende de tu proveedor
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('E_MAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('E_MAIL_HOST_PASSWORD')
+# Ruta a tu JSON descargado de Google
+CLIENT_SECRETS_FILE = config('CLIENT_SECRETS_FILE', default='')
+
+# Gmail autorizado para enviar correos
+EMAIL_OAUTH_ADDRESS = config('EMAIL_HOST_USER', default='')
+
+# Solo en producción
+EMAIL_OAUTH_REFRESH_TOKEN = 'TU_REFRESH_TOKEN'
+EMAIL_OAUTH_CLIENT_ID = 'TU_CLIENT_ID'
+EMAIL_OAUTH_CLIENT_SECRET = 'TU_CLIENT_SECRET'
