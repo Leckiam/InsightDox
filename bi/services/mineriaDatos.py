@@ -1,4 +1,8 @@
 import pandas as pd
+import joblib
+from django.conf import settings
+import os
+from .gcp_gsc import subir_modelo
 
 class AnalizadorMovimientos:
     def __init__(self, df: pd.DataFrame):
@@ -199,3 +203,51 @@ class AnalizadorMovimientos:
             "mas_alta": fila_mas_alta.to_dict(),
             "mas_baja": fila_mas_baja.to_dict()
         }
+    
+    def predecir_gastos(self, meses_futuros=3):
+        """
+        Devuelve las predicciones de gastos futuros ('GA') para los próximos meses basadas en los movimientos históricos.
+        """
+        from prophet import Prophet
+        import tempfile
+        # Filtrar movimientos de tipo 'GA'
+        df = self.df[self.df['naturaleza'] == 'GA'][['fecha', 'total']].copy()
+        if df.empty:
+            return "No hay datos de gastos ('GA') para generar predicciones."
+        print(df.head(5))
+        print(df.tail(5))
+        
+        # Preparar datos para Prophet
+        df_prophet = df.rename(columns={'fecha': 'ds', 'total': 'y'})
+        print(df_prophet.head(5))
+        print(df_prophet.tail(5))
+
+        # Entrenar modelo Prophet
+        modelo = Prophet()
+        modelo.fit(df_prophet)
+
+        # Guardar modelo
+        if settings.DEBUG:
+            modelo_path = os.path.join(settings.MEDIA_ROOT, 'modelos', 'modelo_gastos.pkl')
+            os.makedirs(os.path.dirname(modelo_path), exist_ok=True)
+            joblib.dump(modelo, modelo_path)
+            print(f"Modelo guardado localmente en: {modelo_path}")
+        else:
+            # Guardar en archivo temporal Windows-safe y subir a GCS
+            tmp_file = tempfile.NamedTemporaryFile(suffix=".pkl", delete=False)
+            tmp_file.close()  # cerrar para que joblib pueda escribir
+            joblib.dump(modelo, tmp_file.name)
+            subir_modelo(local_file_path=tmp_file.name, blob_name='media/modelos/prophet_gastos.pkl')
+            print("Modelo subido a GCS correctamente.")
+            os.remove(tmp_file.name)  # borrar el temporal
+
+        # Generar predicción
+        future = modelo.make_future_dataframe(periods=meses_futuros, freq='M')
+        forecast = modelo.predict(future)
+        
+        # Filtrar solo meses futuros después del último dato histórico
+        ultimo_mes = df_prophet['ds'].dt.to_period('M').max()
+        predicciones = forecast[forecast['ds'].dt.to_period('M') > ultimo_mes][['ds','yhat','yhat_lower','yhat_upper']].head(meses_futuros)
+
+        # Convertir a lista de diccionarios
+        return predicciones.to_dict(orient='records')

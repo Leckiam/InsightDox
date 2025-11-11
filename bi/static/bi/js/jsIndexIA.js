@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
             respuestaDiv.style.opacity = "1";
         } catch (err) {
             console.error("❌ Error en streaming:", err);
-            respuestaDiv.textContent = "⚠️ Error al consultar la IA. Solo se aceptan preguntas sobre los movimientos economicos";
+            respuestaDiv.textContent = "⚠️ Error al consultar la IA. Solo se aceptan preguntas sobre los movimientos economicos registrados";
         }
     });
 

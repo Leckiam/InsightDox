@@ -24,7 +24,7 @@ class="main-content"
             <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h6 class="text-muted">Ventas (Mes)</h6>
-                    <h3 class="text-success fw-bold">{{ ultimo_Informe.resumen_ventas|clp }}</h3>
+                    <h3 class="text-success fw-bold">{{ ultimo_Informe.resumen_ventas|default:"0"|clp }}</h3>
                 </div>
             </div>
         </div>
@@ -32,7 +32,7 @@ class="main-content"
             <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h6 class="text-muted">Gastos (Mes)</h6>
-                    <h3 class="text-danger fw-bold">{{ ultimo_Informe.resumen_gastos|clp }}</h3>
+                    <h3 class="text-danger fw-bold">{{ ultimo_Informe.resumen_gastos|default:"0"|clp }}</h3>
                 </div>
             </div>
         </div>
@@ -40,7 +40,7 @@ class="main-content"
             <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h6 class="text-muted">Balance</h6>
-                    <h3 class="text-primary fw-bold">{{ balance|clp }}</h3>
+                    <h3 class="text-primary fw-bold">{{ balance|default:"0"|clp }}</h3>
                 </div>
             </div>
         </div>
@@ -48,7 +48,7 @@ class="main-content"
             <div class="card text-center shadow-sm">
                 <div class="card-body">
                     <h6 class="text-muted">Remuneración</h6>
-                    <h3 class="text-purple fw-bold">{{ ultimo_Informe.resumen_remuneraciones|clp }}</h3>
+                    <h3 class="text-purple fw-bold">{{ ultimo_Informe.resumen_remuneraciones|default:"0"|clp }}</h3>
                 </div>
             </div>
         </div>
