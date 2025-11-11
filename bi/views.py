@@ -220,7 +220,9 @@ def addUser(request):
         username_tmp = request.POST.get("username")
         email_tmp = request.POST.get("correo")
         nombre_tmp = request.POST.get("nombre")
-        password_tmp = request.POST.get("contrasena")
+        apellido_tmp = request.POST.get("apellido")
+        password1_tmp = request.POST.get("contrasena1")
+        password2_tmp = request.POST.get("contrasena2")
         rolID_tmp = request.POST.get("rol")
         avatar_tmp = request.FILES.get("avatar")
         if avatar_tmp == None:
@@ -240,11 +242,15 @@ def addUser(request):
                 if not Profile.objects.filter(user=user_tmp).exists():
                     addProfile(user_tmp,avatar_tmp,rolID_tmp)
             else:
-                user_tmp = User.objects.create_user(email=email_tmp,
-                                            username=username_tmp,
-                                            password=password_tmp,
-                                            first_name=nombre_tmp)
-                addProfile(user_tmp,avatar_tmp,rolID_tmp)
+                if password1_tmp == password2_tmp:
+                    user_tmp = User.objects.create_user(email=email_tmp,
+                                                username=username_tmp,
+                                                password=password1_tmp,
+                                                first_name=nombre_tmp,
+                                                last_name=apellido_tmp)
+                    addProfile(user_tmp,avatar_tmp,rolID_tmp)
+                else:
+                    print('Contraseñas no coinciden')
         except:
             print('Fallo el agregar Usuario')
     next_url = request.GET.get('next', 'home')
@@ -332,7 +338,6 @@ def addInformeCosto(request):
     if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
         informe_excel = request.FILES['archivo_informe']
         df = lecturaxlsx.procesar_informe(informe_excel)
-        url='https://storage.googleapis.com/mi-bucket/informes/'
         mes,anno = lecturaxlsx.obtenerMesAnno(df)
         
         df_ventas = df[df['Categoria'] == 'EdP']

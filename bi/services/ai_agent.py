@@ -10,6 +10,7 @@ def obtenerPromptMD(pregunta):
     - accion: nombre del método a usar
     - parametros: diccionario de filtros posibles (dia, mes, anio, tipo)
 
+    
     Parametro "mes" debe ser un tipo de dato int. Ej: "Enero" es 1
 
     Tipo suele ser: VE = Ventas; GA = Gastos; RE = Remuneraciones
@@ -28,6 +29,15 @@ def obtenerPromptMD(pregunta):
     - cantidad_extremos(dia=None, mes=None, anio=None): Devuelve los movimientos con la cantidad más alta y más baja en el rango de fecha.
     - por_naturaleza(tipo, dia=None, mes=None, anio=None): Devuelve estadísticas de los movimientos filtrados por tipo ('VE', 'GA', 'RE'), incluyendo la cantidad de movimientos, el promedio del total, el total más alto y el total más bajo dentro del rango de fecha indicado.
     - mayor_menor_por_tipo(tipo, dia=None, mes=None, anio=None): Devuelve los movimientos de un tipo específico ('VE', 'GA', 'RE') con total más alto y más bajo en el rango de fecha.
+    - predecir_gastos(): Devuelve las predicciones de gastos futuros ('GA') para los próximos meses basadas en los movimientos históricos.
+
+    El campo "accion" **debe coincidir exactamente** con el nombre del método en Python. Por ejemplo: "predecir_gastos".
+    
+    Nota: El método "predecir_gastos()" no requiere ningún parámetro de fecha ni tipo. 
+    Cuando el asistente seleccione esta acción, debe devolver:
+    - accion: "predecir_gastos"
+    - parametros: 
+    
 
     Pregunta: "{pregunta}"
     """
@@ -130,7 +140,6 @@ def generarRespuesta(request):
 
     Instrucciones:
     - Redacta la respuesta en un solo enunciado claro y natural.
-    - Corrige cualquier error ortográfico o palabra mal escrita del usuario.
     - No agregues contexto extra ni inventes información.
     - Si hay filtros (día, mes, año, tipo), menciónalos naturalmente.
     - Sé conciso (máximo 2 líneas).
@@ -141,19 +150,24 @@ def generarRespuesta(request):
     - Resultado del análisis: {resultado}
     - Parámetros usados: {interpretacion.get('parametros', {})}
 
-    Ejemplos:
+    Ejemplos comunes:
     - "En total hay 54 movimientos registrados en septiembre de 2025."
     - "Durante 2024 se realizaron 120 movimientos de tipo venta (VE) en la Empresa Fenix Ingenieria y Servicios Ltda."
     - "El total más alto registrado este mes fue de $2.500.000 CLP."
+    
+    Ejemplos de predicción para próximos meses:
+    - "Para el próximo mes (octubre 2025), los gastos estimados son entre $91.934 CLP y $876.192 CLP, con un valor promedio de $504.654 CLP."
+    - "Para el mes siguiente (noviembre 2025), los gastos se estiman entre $75.831 CLP y $838.749 CLP, con un promedio de $431.299 CLP."
+    - "Para el tercer mes (diciembre 2025), los gastos se proyectan entre $97.171 CLP y $864.634 CLP, con un promedio de $454.678 CLP."
     ---
-
+    
     Escribe solo la respuesta final, sin notas ni marcas de fin.
     """
     
     # === Solicitud a phi3:mini (streaming) ===
     url = "http://localhost:11434/api/generate"
     data = {
-        "model": "phi3:mini",
+        "model": "mistral:7b",
         "prompt": prompt_respuesta,
         "stream": True
         }
