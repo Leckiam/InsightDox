@@ -241,6 +241,9 @@ def addUser(request):
                 user_tmp = User.objects.get(username=username_tmp)
                 if not Profile.objects.filter(user=user_tmp).exists():
                     addProfile(user_tmp,avatar_tmp,rolID_tmp)
+                    messages.success(request, f'Perfil agregado al usuario existente {username_tmp}.')
+                else:
+                    messages.info(request, f'El usuario {username_tmp} ya existe con perfil.')
             else:
                 if password1_tmp == password2_tmp:
                     user_tmp = User.objects.create_user(email=email_tmp,
@@ -249,10 +252,12 @@ def addUser(request):
                                                 first_name=nombre_tmp,
                                                 last_name=apellido_tmp)
                     addProfile(user_tmp,avatar_tmp,rolID_tmp)
+                    messages.success(request, f'Usuario {username_tmp} creado correctamente.')
                 else:
-                    print('Contraseñas no coinciden')
-        except:
-            print('Fallo el agregar Usuario')
+                    messages.error(request, 'Las contraseñas no coinciden.')
+        except Exception as exc:
+            print('Fallo el agregar Usuario:', exc)
+            messages.error(request, 'Ocurrió un error al crear el usuario. Revise los datos e intente nuevamente.')
     next_url = request.GET.get('next', 'home')
     return redirect(next_url)
 
@@ -266,9 +271,10 @@ def deleteUser(request,id):
                 if profile_tmp:
                     profile_tmp.delete()
                 user_tmp.delete()
-                print("Usuario eliminado correctamente")
+                messages.success(request, 'Usuario eliminado correctamente.')
         except Exception as e:
             print(f"No se pudo eliminar el usuario: {e}")
+            messages.error(request, 'No se pudo eliminar el usuario. Intente nuevamente.')
     next_url = request.GET.get('next', 'home')
     return redirect(next_url)
 
@@ -312,11 +318,12 @@ def editUser(request,id):
                         update = False
                 if update:
                     user_tmp.save()
-                    print( "Usuario editado correctamente")
+                    messages.success(request, 'Usuario editado correctamente.')
                 else:
-                    print('No se realizaron cambios al Usuario')
+                    messages.info(request, 'No se realizaron cambios al usuario.')
         except Exception as e:
             print(f"No se pudo editar el usuario: {e}")
+            messages.error(request, 'Ocurrió un error al editar el usuario. Revise los datos e intente nuevamente.')
     next_url = request.GET.get('next', 'home')
     return redirect(next_url)
 
@@ -336,40 +343,56 @@ def gestUsers(request):
 @login_required
 def addInformeCosto(request):
     if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
-        informe_excel = request.FILES['archivo_informe']
-        df = lecturaxlsx.procesar_informe(informe_excel)
-        mes,anno = lecturaxlsx.obtenerMesAnno(df)
-        
-        df_ventas = df[df['Categoria'] == 'EdP']
-        df_remuneracion = df[df['Categoria'] == 'MO']
-        df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
-        
-        informe, created = InformeCostos.objects.get_or_create(
-            usuario=request.user,
-            mes=mes,
-            anio=anno,
-            defaults={
-                'filas_detectadas': len(df),
-                'resumen_ventas': float(df_ventas['Total'].sum()),
-                'resumen_gastos': float(df_gastos['Total'].sum()),
-                'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
-            }
-        )
-        if informe.archivo_gcs:
-            informe.archivo_gcs.delete(save=False)
-        informe.archivo_gcs.save(
-            f"Informe_{anno}_{mes:02d}.xlsx",
-            informe_excel,
-            save=True
-        )
+        next_url = request.POST.get('next', 'registroInformes')
+        informe_excel = request.FILES.get('archivo_informe')
+        if not informe_excel:
+            messages.error(request, 'No se seleccionó ningún archivo para subir.')
+            return redirect(next_url)
 
-        # Solo cargar movimientos si se creó recién
-        if created:
-            lecturaxlsx.cargar_movimientos_desde_df(df, informe)
-        else:
-            print('El informe ya existe')
-        next_url = request.POST.get('next','home')
-        return redirect(next_url)
+        try:
+            df = lecturaxlsx.procesar_informe(informe_excel)
+            mes, anno = lecturaxlsx.obtenerMesAnno(df)
+
+            df_ventas = df[df['Categoria'] == 'EdP']
+            df_remuneracion = df[df['Categoria'] == 'MO']
+            df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
+
+            informe, created = InformeCostos.objects.get_or_create(
+                usuario=request.user,
+                mes=mes,
+                anio=anno,
+                defaults={
+                    'filas_detectadas': len(df),
+                    'resumen_ventas': float(df_ventas['Total'].sum()),
+                    'resumen_gastos': float(df_gastos['Total'].sum()),
+                    'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
+                }
+            )
+            if informe.archivo_gcs:
+                informe.archivo_gcs.delete(save=False)
+            informe.archivo_gcs.save(
+                f"Informe_{anno}_{mes:02d}.xlsx",
+                informe_excel,
+                save=True
+            )
+
+            # Solo cargar movimientos si se creó recién
+            if created:
+                lecturaxlsx.cargar_movimientos_desde_df(df, informe)
+            else:
+                print('El informe ya existe')
+
+            messages.success(request, 'Informe subido correctamente.')
+            return redirect(next_url)
+
+        except Exception as e:
+            # Capturar errores de procesamiento del archivo (formato inválido, fechas NaN, etc.)
+            err_msg = str(e)
+            # Mensaje amigable para el usuario, manteniendo el detalle en logs
+            messages.error(request, f"No se pudo procesar el archivo: {err_msg}")
+            print(f"Error al procesar informe: {err_msg}")
+            return redirect(next_url)
+
     return redirect('home')
 
 @login_required

@@ -28,12 +28,65 @@
         {% include "bi/navfooter/footer.html" %}
     {% endblock %}
 
+    {# --- Django messages as Bootstrap toasts (top-right) --- #}
+    <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index:1080;">
+        {% if messages %}
+            {% for message in messages %}
+                {% if message.message %}
+                    {% if 'error' in message.tags %}
+                        <div class="toast align-items-center text-bg-danger border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="8000">
+                            <div class="d-flex">
+                                <div class="toast-body">{{ message.message }}</div>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+                            </div>
+                        </div>
+                    {% elif 'success' in message.tags %}
+                        <div class="toast align-items-center text-bg-success border-0 mb-2" role="alert" aria-live="polite" aria-atomic="true" data-bs-delay="5000">
+                            <div class="d-flex">
+                                <div class="toast-body">{{ message.message }}</div>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+                            </div>
+                        </div>
+                    {% elif 'warning' in message.tags %}
+                        <div class="toast align-items-center text-bg-warning border-0 mb-2" role="alert" aria-live="polite" aria-atomic="true" data-bs-delay="7000">
+                            <div class="d-flex">
+                                <div class="toast-body text-dark">{{ message.message }}</div>
+                                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="toast align-items-center text-bg-secondary border-0 mb-2" role="alert" aria-live="polite" aria-atomic="true" data-bs-delay="6000">
+                            <div class="d-flex">
+                                <div class="toast-body">{{ message.message }}</div>
+                                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
         integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
         crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
         integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y"
         crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var toastElList = [].slice.call(document.querySelectorAll('.toast'));
+            toastElList.forEach(function (toastEl) {
+                try {
+                    var t = new bootstrap.Toast(toastEl);
+                    t.show();
+                } catch (e) {
+                    // si hay error con bootstrap, no bloquear el resto de la página
+                    console.error('Bootstrap toast init error:', e);
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
