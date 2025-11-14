@@ -1,48 +1,115 @@
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from django.conf import settings
+from datetime import datetime
+import os
+import joblib
 import requests, json
 import pandas as pd
 from . import mineriaDatos as md
 from ..models import MovimientoEconomico
 
-def obtenerPromptMD(pregunta):
-    prompt = f"""
-    Eres un asistente que selecciona el método más adecuado para analizar movimientos económicos.
-    Devuelve SOLO un JSON con:
-    - accion: nombre del método a usar
-    - parametros: diccionario de filtros posibles (dia, mes, anio, tipo)
+url = "http://localhost:11434/api/generate"
 
+def extraer_parametros(pregunta: str):
+    parametros = {}
+
+    # ---- Tipo ----
+    ventas_kw = [
+        "venta", "ventas", "vender", "vendí", "vendido",
+        "ingreso", "ingresos", "entró dinero", "entradas de dinero",
+        "facturación", "facturar", "boleta de venta", "ticket de venta"
+    ]
+
+    gastos_kw = [
+        "gasto", "gastos", "gastar", "pagado", "pagué", "pagar",
+        "costo", "costos", "egreso", "egresos",
+        "salida de dinero", "desembolso", "compras", "consumo"
+    ]
+
+    remuneraciones_kw = [
+        "sueldo", "sueldos", "salario", "salarios",
+        "remuneración", "remuneraciones",
+        "pago de empleados", "personal", "nomina", "honorarios"
+    ]
+
+    if any(t in pregunta for t in ventas_kw):
+        parametros["tipo"] = "VE"
+    if any(t in pregunta for t in gastos_kw):
+        parametros["tipo"] = "RE"
+    if any(t in pregunta for t in remuneraciones_kw):
+        parametros["tipo"] = "GA"
+        
+    # ---- Meses ----
+    meses = {
+        "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
+        "julio": 7, "agosto": 8, "septiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12
+    }
+
+    for nombre, numero in meses.items():
+        if nombre in pregunta.lower():
+            parametros["mes"] = numero
+
+    # Mes actual / anterior
+    mes_actual = datetime.now().month
+
+    if "mes pasado" in pregunta.lower() or "mes anterior" in pregunta.lower():
+        parametros["mes"] = mes_actual - 1 if mes_actual > 1 else 12
+
+    if "este mes" in pregunta.lower() or "mes actual" in pregunta.lower():
+        parametros["mes"] = mes_actual
+
+    # ---- Año ----
+    import re
+    anio_especifico = re.search(r"(19|20)\d{2}", pregunta)
+    if anio_especifico:
+        parametros["anio"] = int(anio_especifico.group())
+    else:
+        anio_actual = datetime.now().year
+        print(anio_especifico)
+        if "este ano" in pregunta:
+            parametros["anio"] = anio_actual
+        elif "ano pasado" in pregunta:
+            parametros["anio"] = anio_actual - 1
+        elif "ano anterior" in pregunta:
+            parametros["anio"] = anio_actual - 1
     
-    Parametro "mes" debe ser un tipo de dato int. Ej: "Enero" es 1
-
-    Tipo suele ser: VE = Ventas; GA = Gastos; RE = Remuneraciones
+    # ---- Categoría ----
+    categorias = ["EdP", "MO", "M", "H", "GG", "EPP"]  # Todas las categorías que manejes
+    for cat in categorias:
+        if cat.lower() in pregunta.lower():
+            parametros["categoria"] = cat
+            break
     
-    Métodos disponibles: 
-    - cantidad_movimientos(dia=None, mes=None, anio=None): Devuelve el número total de movimientos registrados en el rango de fecha indicado.
-    - cantidad_movimientos_tipo(tipo, dia=None, mes=None, anio=None): Devuelve la cantidad de movimientos registrados por el tipo y por el rango de fecha indicado.
-    - categorias_disponibles(dia=None, mes=None, anio=None): Devuelve la lista de categorías únicas presentes en los movimientos del rango de fecha.
-    - categorias_por_tipo(tipo, dia=None, mes=None, anio=None) : Devuelve una lista de categorías distintas presentes en los movimientos del tipo especificado ('VE', 'GA' o 'RE') y rango de fecha indicado.
-    - cantidad_movimientos_por_categoria(dia=None, mes=None, anio=None): Devuelve un conteo de movimientos agrupados por categoría en el rango de fecha.
-    - resumen_numerico(dia=None, mes=None, anio=None): Devuelve estadísticas de los movimientos (promedio, mediana, moda, total más alto y total más bajo).
-    - movimiento_mas_reciente(dia=None, mes=None, anio=None): Devuelve el movimiento más reciente registrado en el rango de fecha.
-    - movimiento_mas_antiguo(dia=None, mes=None, anio=None): Devuelve el movimiento más antiguo registrado en el rango de fecha.
-    - precio_unitario_extremos(dia=None, mes=None, anio=None): Devuelve los movimientos con el precio unitario más alto y más bajo en el rango de fecha.
-    - total_extremos(dia=None, mes=None, anio=None): Devuelve los movimientos con el total más alto y más bajo en el rango de fecha.
-    - cantidad_extremos(dia=None, mes=None, anio=None): Devuelve los movimientos con la cantidad más alta y más baja en el rango de fecha.
-    - por_naturaleza(tipo, dia=None, mes=None, anio=None): Devuelve estadísticas de los movimientos filtrados por tipo ('VE', 'GA', 'RE'), incluyendo la cantidad de movimientos, el promedio del total, el total más alto y el total más bajo dentro del rango de fecha indicado.
-    - mayor_menor_por_tipo(tipo, dia=None, mes=None, anio=None): Devuelve los movimientos de un tipo específico ('VE', 'GA', 'RE') con total más alto y más bajo en el rango de fecha.
-    - predecir_gastos(): Devuelve las predicciones de gastos futuros ('GA') para los próximos meses basadas en los movimientos históricos.
+    # ---- Ordenamiento para ranking ----
+    if "ranking" in pregunta.lower() or "ordenadas" in pregunta.lower() or "mayor" in pregunta.lower():
+        if "cantidad" in pregunta.lower():
+            parametros["ordenar_por"] = "cantidad"
+        elif "precio" in pregunta.lower() or "unitario" in pregunta.lower():
+            parametros["ordenar_por"] = "precio_unitario"
+        else:
+            parametros["ordenar_por"] = "total"  # default
 
-    El campo "accion" **debe coincidir exactamente** con el nombre del método en Python. Por ejemplo: "predecir_gastos".
-    
-    Nota: El método "predecir_gastos()" no requiere ningún parámetro de fecha ni tipo. 
-    Cuando el asistente seleccione esta acción, debe devolver:
-    - accion: "predecir_gastos"
-    - parametros: 
-    
+    return parametros
 
-    Pregunta: "{pregunta}"
-    """
+def entrenaModelo():
+    # Ruta al CSV de entrenamiento
+    ruta = os.path.join(settings.BASE_DIR, "config", "data", "intenciones.csv")
+    df = pd.read_csv(ruta, comment="#")
 
-    return prompt
+    modelo = Pipeline([
+        ("vectorizer", TfidfVectorizer()),
+        ("classifier", LogisticRegression(max_iter=200))
+    ])
+
+    modelo.fit(df["texto"], df["intencion"])
+
+    # Guardar modelo
+    ruta_modelo = os.path.join(settings.BASE_DIR, "config", "modelo", "clasificador_intenciones.pkl")
+    joblib.dump(modelo, ruta_modelo)
+
+    print("Modelo entrenado y guardado en:", ruta_modelo)
 
 def limpiar_null(d):
     if isinstance(d, dict):
@@ -52,25 +119,17 @@ def limpiar_null(d):
     else:
         return d
 
-def interpretar_pregunta(pregunta):
-    url = "http://localhost:11434/api/generate"
-    data = {
-        "model": "mistral:7b",
-        "prompt": obtenerPromptMD(pregunta),
-        "stream": False
-    }
-    response = requests.post(url, json=data)
-    respuesta = response.json().get("response", "")
+def interpretar_pregunta(pregunta: str):
+    ruta_modelo = os.path.join(settings.BASE_DIR, "config", "modelo", "clasificador_intenciones.pkl")
+    modelo = joblib.load(ruta_modelo)
 
-    try:
-        # Intenta parsear el JSON devuelto
-        respuesta_json_valido = respuesta.replace("None", "null")
-        print(respuesta_json_valido)
-        return json.loads(respuesta_json_valido)
-    except Exception as e:
-        print(f"Error al parsear JSON: {e}")
-        print(f"Respuesta recibida: {repr(respuesta)}")
-        return {"accion": None, "parametros": {}}
+    intencion = modelo.predict([pregunta])[0]
+    parametros = extraer_parametros(pregunta)
+
+    return {
+        "accion": intencion,
+        "parametros": parametros
+    }
 
 def ejecutar_accion(analizador, interpretacion):
     accion = interpretacion.get("accion")
@@ -116,6 +175,26 @@ def normalizar_pregunta(pregunta: str) -> str:
 
     return pregunta
 
+def abreviar_numero(valor):
+    """Convierte números grandes a formato K/M/B"""
+    if valor >= 1_000_000_000:
+        return f"{valor/1_000_000_000:.2f}B"
+    elif valor >= 1_000_000:
+        return f"{valor/1_000_000:.2f}M"
+    elif valor >= 1_000:
+        return f"{valor/1_000:.2f}K"
+    else:
+        return str(valor)
+
+def formatear_resultado(resultado):
+    """Recorre dicts, listas y valores individuales y aplica abreviación"""
+    if isinstance(resultado, dict):
+        return {k: formatear_resultado(v) for k, v in resultado.items()}
+    elif isinstance(resultado, list):
+        return [formatear_resultado(v) for v in resultado]
+    elif isinstance(resultado, (int, float)):
+        return abreviar_numero(resultado)
+    return resultado
 
 def generarRespuesta(request):
     pregunta_tmp = request.data.get("pregunta", "").strip()
@@ -128,49 +207,54 @@ def generarRespuesta(request):
     df.rename(columns={'informe__observaciones': 'observacion'}, inplace=True)
 
     # Analizar
+    entrenaModelo()
     analizador = md.AnalizadorMovimientos(df)
     interpretacion = interpretar_pregunta(pregunta)
+    print(interpretacion)
     resultado = ejecutar_accion(analizador, interpretacion)
-    print(resultado)
+    resultado_formateado = formatear_resultado(resultado)
     
+    fecha_actual = datetime.now()
+    mes = fecha_actual.month
+    anio = fecha_actual.year
+    fecha_formateada = fecha_actual.strftime("%d-%m-%Y")
     # Crear prompt de redacción
     prompt_respuesta = f"""
-    Eres un asistente contable que redacta respuestas breves y claras en español
-    basadas en los resultados del análisis de movimientos económicos.
+    ## Eres un asistente contable que responde brevemente en español sobre movimientos económicos de Fenix Ing. y Servicios Ltda. y la fecha actual es '{fecha_formateada}'
 
     Instrucciones:
-    - Redacta la respuesta en un solo enunciado claro y natural.
-    - No agregues contexto extra ni inventes información.
-    - Si hay filtros (día, mes, año, tipo), menciónalos naturalmente.
-    - Sé conciso (máximo 2 líneas).
-    - El dinero como total o precio_unitario siempres son pesos chilenos (usar $X.XXX CLP), no olvidar el separador de miles (usar '.' no ',').
+    - Responde en un solo enunciado claro y natural.
+    - Menciona día, mes, año o tipo solo si aplica.
+    - Sé conciso (máx. 2 líneas).
+    - Totales y precios unitarios siempre en pesos chilenos ($X.XXX CLP), con separador de miles.
+    - Si en prediccion pide mas de 1 mes, entonces decir que solo se pude calcular hasta el proximo mes.
+    - Siempre trata de dar descripcion, categoria, cantidad, total y fecha en la respuesta al movimiento obtenido.
+    - Si 'Pregunta' no tiene ano ni mes, entonces mencionar 'hasta el mes {mes} del {anio}'.
+    - K: miles
+    - M: millones
+    - B: miles de millones
 
     Datos:
-    - Pregunta del usuario: "{pregunta}"
-    - Resultado del análisis: {resultado}
-    - Parámetros usados: {interpretacion.get('parametros', {})}
+    - Pregunta: '{ pregunta }'
+    - Resultado: { resultado_formateado }
+    - Parámetros usados: {interpretacion.get('parametros', {}) }
 
-    Ejemplos comunes:
-    - "En total hay 54 movimientos registrados en septiembre de 2025."
-    - "Durante 2024 se realizaron 120 movimientos de tipo venta (VE) en la Empresa Fenix Ingenieria y Servicios Ltda."
-    - "El total más alto registrado este mes fue de $2.500.000 CLP."
-    
-    Ejemplos de predicción para próximos meses:
-    - "Para el próximo mes (octubre 2025), los gastos estimados son entre $91.934 CLP y $876.192 CLP, con un valor promedio de $504.654 CLP."
-    - "Para el mes siguiente (noviembre 2025), los gastos se estiman entre $75.831 CLP y $838.749 CLP, con un promedio de $431.299 CLP."
-    - "Para el tercer mes (diciembre 2025), los gastos se proyectan entre $97.171 CLP y $864.634 CLP, con un promedio de $454.678 CLP."
-    ---
-    
-    Escribe solo la respuesta final, sin notas ni marcas de fin.
+    Ejemplos:
+    - 'En total hay 54 movimientos registrados en septiembre de 2025.'
+    - 'Gastos estimados para octubre 2025: $1K CLP a $10K CLP, promedio $5K CLP.'
+    - 'El proximo mes (Diciembre 2025) se espera un gasto estimado de alrededor de $5K CLP (rango entre $4K CLP y $6K CLP).'
+    - 'El ranking de categorías [Acendente por total] de los movimientos económicos hasta Diciembre del 2025 es: EPP ($1.00M CLP), GG ($1.11M CLP)'
+
+    Escribe solo la respuesta final.
     """
     
     # === Solicitud a phi3:mini (streaming) ===
-    url = "http://localhost:11434/api/generate"
     data = {
-        "model": "mistral:7b",
+        "model": "phi3_contable",
         "prompt": prompt_respuesta,
         "stream": True
-        }
+    }
+    print(data)
 
     texto_final = ""
 
@@ -183,6 +267,9 @@ def generarRespuesta(request):
                         fragmento = token_data["response"]
                         if "[FIN]" in fragmento:
                             texto_final += fragmento.split("[FIN]")[0]
+                            break
+                        elif "---" in fragmento or "##" in fragmento:
+                            texto_final += fragmento.split("---")[0].split("##")[0]
                             break
                         texto_final += fragmento
                         yield fragmento

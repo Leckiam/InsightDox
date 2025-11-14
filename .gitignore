@@ -39,6 +39,9 @@ config/credentials/
 *.sqlite
 *.bak
 
+# Modelos
+*.pkl
+
 # Python
 __pycache__/
 *.py[cod]

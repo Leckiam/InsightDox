@@ -1,21 +1,16 @@
 # Framework base
 Django==5.2.6
-django-widget-tweaks==1.5.0
 
 # Variables de entorno
 python-decouple==3.8
-
-# Manejo de archivos estáticos y media
-whitenoise==6.7.0
 
 #Libreria que soporta ImageField
 pillow==11.3.0
 
 # API y seguridad
 djangorestframework==3.15.2
-django-cors-headers==4.4.0
 
-#       Google Cloud (Storage y BigQuery)       #
+#       Google Cloud Storage       #
 # Cliente general de Google Cloud
 google-cloud-core==2.4.1
 google-auth==2.41.1
@@ -26,29 +21,15 @@ google-api-python-client==2.187.0
 django-storages==1.14.4
 google-cloud-storage==2.18.2
 
-# Para trabajar con BigQuery
-google-cloud-bigquery==3.25.0
-
-# Procesar datos de BigQuery en DataFrames
+# Procesar datos en DataFrames
 pandas==2.2.3
 numpy==1.26.4
 scikit-learn==1.5.2
 
 openpyxl==3.1.5
 
-prophet==1.2.1
-
 # Base de datos MariaDB/MySQL
 mysqlclient==2.2.4
 
-# IA / RAG (Retrieval-Augmented Generation)
-llama-index==0.10.26
-llama-index-llms-ollama==0.1.2
-llama-index-vector-stores-chroma==0.1.6
-llama-index-embeddings-huggingface==0.2.3
-llama-index-embeddings-langchain==0.1.2
-
 # Soporte y análisis
-tqdm==4.66.2
 requests==2.31.0
-python-dotenv==1.0.1

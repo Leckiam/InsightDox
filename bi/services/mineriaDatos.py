@@ -1,8 +1,4 @@
 import pandas as pd
-import joblib
-from django.conf import settings
-import os
-from .gcp_gsc import subir_modelo
 
 class AnalizadorMovimientos:
     def __init__(self, df: pd.DataFrame):
@@ -12,6 +8,7 @@ class AnalizadorMovimientos:
         """
         self.df = df.copy()
         self.df['fecha'] = pd.to_datetime(self.df['fecha'], errors='coerce')
+        self.df = self.df.sort_values('fecha').reset_index(drop=True)
 
     # ====== 🔹 FILTROS DE FECHA ======
     def mes_nro(self, mes):
@@ -45,209 +42,191 @@ class AnalizadorMovimientos:
         return df_filtrado
 
     # ====== 🔹 MÉTODOS INTERNOS ======
-    def cantidad_movimientos(self, dia=None, mes=None, anio=None):
-        """
-        Devuelve la cantidad de movimientos registrados en el rango de fecha indicado.
-        """
+    def cantidad_movimientos(self, tipo=None, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
-        return len(df)
-    
-    def cantidad_movimientos_tipo(self, tipo, dia=None, mes=None, anio=None):
-        """
-        Devuelve la cantidad de movimientos registrados por el tipo y por el rango de fecha indicado.
-        """
-        df = self._filtrar_fecha(dia, mes, anio)
-        df = df[df['naturaleza'] == tipo]
-        if df.empty:
-            return "No hay registros de este tipo en ese rango de fecha."
-        return len(df)
+        if tipo:
+            df = df[df['naturaleza'] == tipo]
+        return len(df) if not df.empty else 0
 
-    def categorias_disponibles(self, dia=None, mes=None, anio=None):
+    def categorias_por_tipo(self, tipo=None, dia=None, mes=None, anio=None, ordenar_por="total", descendente=True):
         """
-        Devuelve una lista de categorías distintas presentes en los movimientos
-        del rango de fecha indicado.
-        """
-        df = self._filtrar_fecha(dia, mes, anio)
-        return df['categoria'].unique().tolist()
-    
-    def categorias_por_tipo(self, tipo, dia=None, mes=None, anio=None):
-        """
-        Devuelve una lista de categorías distintas presentes en los movimientos
-        del tipo especificado ('VE', 'GA' o 'RE') y rango de fecha indicado.
+        Devuelve las categorías filtradas por tipo y fecha.
+        - tipo: 'VE', 'GA', 'RE', o None para todas.
+        - ordenar_por: 'total', 'cantidad', 'precio_unitario' o None.
+        - descendente: True para orden descendente, False para ascendente.
         """
         df = self._filtrar_fecha(dia, mes, anio)
-        df = df[df['naturaleza'] == tipo]
-        return df['categoria'].unique().tolist()
+        por = ''
+        if tipo:
+            df = df[df["naturaleza"] == tipo]
+        
+        if df.empty:
+            return []
+
+        if ordenar_por == "total":
+            serie = df.groupby("categoria")["total"].sum().sort_values(ascending=descendente).to_dict()
+            por = 'tot'
+        elif ordenar_por == "cantidad":
+            serie = df.groupby("categoria").size().sort_values(ascending=descendente).to_dict()
+            por = 'cant'
+        elif ordenar_por == "precio_unitario":
+            serie = df.groupby("categoria")["precio_unitario"].mean().sort_values(ascending=descendente).to_dict()
+            por = 'precio_unitario'
+        else:
+            categorias = df['categoria'].unique().tolist()
+            return {i+1: {"cat": cat, "tot": None} for i, cat in enumerate(categorias)}
+        # Convertir a lista de tuplas (posición, categoría, valor)
+        resultado = {i+1: {"cat": cat, por: valor} for i, (cat, valor) in enumerate(serie.items())}
+        return resultado
+
 
     def cantidad_movimientos_por_categoria(self, dia=None, mes=None, anio=None):
-        """
-        Devuelve un diccionario con la cantidad de movimientos por cada categoría
-        en el rango de fecha indicado.
-        """
         df = self._filtrar_fecha(dia, mes, anio)
         return df.groupby('categoria').size().to_dict()
 
-    def resumen_numerico(self, dia=None, mes=None, anio=None):
-        """
-        Devuelve estadísticas numéricas de los movimientos del rango de fecha indicado:
-        - promedio_total
-        - mediana_total
-        - moda_total
-        - total_mas_alto
-        - total_mas_bajo
-        """
+    def estadisticas_basicas_tipo(self, tipo, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
+        df = df[df["naturaleza"] == tipo]
         if df.empty:
-            return "No hay movimientos en ese rango de fecha."
-        moda_total = df['total'].mode()
+            return None
+        moda = df["total"].mode()
         return {
-            'promedio_total': df['total'].mean(),
-            'mediana_total': df['total'].median(),
-            'moda_total': moda_total.iloc[0] if not moda_total.empty else None,
-            'total_mas_alto': df['total'].max(),
-            'total_mas_bajo': df['total'].min()
+            "cantidad": len(df),
+            "promedio": df["total"].mean(),
+            "mediana": df["total"].median(),
+            "moda": moda.iloc[0] if not moda.empty else None
         }
 
-    def movimiento_mas_reciente(self, dia=None, mes=None, anio=None):
-        """
-        Devuelve el movimiento más reciente dentro del rango de fecha indicado.
-        """
-        df = self._filtrar_fecha(dia, mes, anio)
+    def _extremos_por_columna(self, df, columna):
         if df.empty:
             return None
-        fila = df.loc[df['fecha'].idxmax()]
-        return fila.to_dict()
-
-    def movimiento_mas_antiguo(self, dia=None, mes=None, anio=None):
-        """
-        Devuelve el movimiento más antiguo dentro del rango de fecha indicado.
-        """
-        df = self._filtrar_fecha(dia, mes, anio)
-        if df.empty:
-            return None
-        fila = df.loc[df['fecha'].idxmin()]
-        return fila.to_dict()
+        return {
+            "mas_alto": df.loc[df[columna].idxmax()].to_dict(),
+            "mas_bajo": df.loc[df[columna].idxmin()].to_dict()
+        }
 
     def precio_unitario_extremos(self, dia=None, mes=None, anio=None):
-        """
-        Devuelve los movimientos con el precio unitario más alto y más bajo
-        en el rango de fecha indicado.
-        """
         df = self._filtrar_fecha(dia, mes, anio)
-        if df.empty:
-            return None
-        return {
-            'mas_alto': df.loc[df['precio_unitario'].idxmax()].to_dict(),
-            'mas_bajo': df.loc[df['precio_unitario'].idxmin()].to_dict()
-        }
+        return self._extremos_por_columna(df, "precio_unitario")
 
     def total_extremos(self, dia=None, mes=None, anio=None):
-        """
-        Devuelve los movimientos con el total más alto y más bajo
-        en el rango de fecha indicado.
-        """
         df = self._filtrar_fecha(dia, mes, anio)
-        if df.empty:
-            return None
-        return {
-            'mas_alto': df.loc[df['total'].idxmax()].to_dict(),
-            'mas_bajo': df.loc[df['total'].idxmin()].to_dict()
-        }
+        return self._extremos_por_columna(df, "total")
 
     def cantidad_extremos(self, dia=None, mes=None, anio=None):
-        """
-        Devuelve los movimientos con la cantidad más alta y más baja
-        en el rango de fecha indicado.
-        """
+        df = self._filtrar_fecha(dia, mes, anio)
+        return self._extremos_por_columna(df, "cantidad")
+
+    def movimiento_mas_reciente(self, dia=None, mes=None, anio=None):
+        df = self._filtrar_fecha(dia, mes, anio)
+        return df.loc[df['fecha'].idxmax()].to_dict() if not df.empty else None
+
+    def movimiento_mas_antiguo(self, dia=None, mes=None, anio=None):
+        df = self._filtrar_fecha(dia, mes, anio)
+        return df.loc[df['fecha'].idxmin()].to_dict() if not df.empty else None
+    
+    def _preparar_dataset_gastos(self):
+        df = self.df[self.df['naturaleza'] == 'GA'][['fecha', 'total']]
+        df = df.sort_values('fecha')
+        df['t'] = (df['fecha'] - df['fecha'].min()).dt.days
+        return df
+    
+    def total_por_tipo(self, tipo, dia=None, mes=None, anio=None):
+        df = self._filtrar_fecha(dia, mes, anio)
+        df = df[df["naturaleza"] == tipo]
+        return df["total"].sum() if not df.empty else 0
+
+    def total_por_categoria(self, categoria, dia=None, mes=None, anio=None):
+        df = self._filtrar_fecha(dia, mes, anio)
+        df = df[df["categoria"].str.lower() == categoria.lower()]
+        return df["total"].sum() if not df.empty else 0
+
+    def distribucion_por_tipo(self, dia=None, mes=None, anio=None):
+        df = self._filtrar_fecha(dia, mes, anio)
+        cantidad_total = len(df)
+        if cantidad_total == 0:
+            return None
+        return df["naturaleza"].value_counts(normalize=True).mul(100).round(2).to_dict()
+
+    def acumulado_mensual(self, tipo=None, anio=None):
+        df = self._filtrar_fecha(None, None, anio)
+        if tipo:
+            df = df[df["naturaleza"] == tipo]
+        if df.empty:
+            return None
+        return df.groupby(df["fecha"].dt.month)["total"].sum().to_dict()
+
+    def variacion_mensual(self, tipo=None, anio=None):
+        acumulado = self.acumulado_mensual(tipo, anio)
+        if not acumulado or len(acumulado) < 2:
+            return None
+        
+        meses = sorted(acumulado.keys())
+        tendencia = {}
+
+        for i in range(1, len(meses)):
+            anterior = acumulado[meses[i-1]]
+            actual = acumulado[meses[i]]
+            variacion = ((actual - anterior) / anterior * 100) if anterior != 0 else None
+            
+            tendencia[meses[i]] = round(variacion, 2) if variacion is not None else None
+        
+        return tendencia
+
+    def mayor_movimiento_por_categoria(self, categoria, dia=None, mes=None, anio=None):
+        df = self._filtrar_fecha(dia, mes, anio)
+        df = df[df["categoria"].str.lower() == categoria.lower()]
+        return df.loc[df["total"].idxmax()].to_dict() if not df.empty else None
+
+    def categoria_mas_frecuente(self, dia=None, mes=None, anio=None):
+        df = self._filtrar_fecha(dia, mes, anio)
+        if df.empty:
+            return None
+        return df["categoria"].mode().iloc[0]
+
+    def resumen_periodo(self, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
         if df.empty:
             return None
         return {
-            'mas_alta': df.loc[df['cantidad'].idxmax()].to_dict(),
-            'mas_baja': df.loc[df['cantidad'].idxmin()].to_dict()
+            "total_movimientos": len(df),
+            "total_gastos": df[df["naturaleza"] == "GA"]["total"].sum(),
+            "total_ventas": df[df["naturaleza"] == "VE"]["total"].sum(),
+            "categoria_mas_frecuente": df["categoria"].mode().iloc[0],
+            "promedio_totales": df["total"].mean(),
         }
 
-    def por_naturaleza(self, tipo, dia=None, mes=None, anio=None):
-        """
-        Devuelve estadísticas de los movimientos filtrados por tipo ('VE', 'GA', 'RE'):
-        - cantidad de movimientos (cantidad)
-        - promedio del total de movimientos (total_promedio)
-        - total mas alto en movimientos (mayor_total)
-        - total mas bajo en movimientos (menor_total)
-        """
-        df = self._filtrar_fecha(dia, mes, anio)
-        df = df[df['naturaleza'] == tipo]
-        if df.empty:
-            return "No hay registros de este tipo en ese rango de fecha."
-        return {
-            'cantidad': len(df),
-            'total_promedio': df['total'].mean(),
-            'mayor_total': df.loc[df['total'].idxmax()].to_dict(),
-            'menor_total': df.loc[df['total'].idxmin()].to_dict()
-        }
+    def _entrenar_modelo_gastos(self, df):
+        from sklearn.ensemble import RandomForestRegressor
+        X = df[['t']]
+        y = df['total']
+        modelo = RandomForestRegressor(
+            n_estimators=100,
+            random_state=42
+        )
+        modelo.fit(X, y)
+        return modelo
 
-    def mayor_menor_por_tipo(self, tipo, dia=None, mes=None, anio=None):
-        """
-        Devuelve los movimientos con el total más alto y más bajo
-        para un tipo específico ('VE', 'GA' o 'RE') dentro del rango de fecha indicado.
-        """
-        df = self._filtrar_fecha(dia, mes, anio)
-        df = df[df['naturaleza'] == tipo]
-        if df.empty:
-            return f"No hay registros del tipo '{tipo}' en ese rango de fecha."
+    def _predecir_futuro(self, modelo, df, n):
+        ult_fecha = df["fecha"].max()
+        ult_t = df["t"].max()
 
-        fila_mas_alta = df.loc[df['total'].idxmax()]
-        fila_mas_baja = df.loc[df['total'].idxmin()]
+        pred = []
+        for i in range(1, n + 1):
+            futuro_t = ult_t + 30 * i
+            fecha = ult_fecha + pd.DateOffset(months=i)
+            valor = modelo.predict([[futuro_t]])[0]
 
-        return {
-            "mas_alta": fila_mas_alta.to_dict(),
-            "mas_baja": fila_mas_baja.to_dict()
-        }
-    
-    def predecir_gastos(self, meses_futuros=3):
-        """
-        Devuelve las predicciones de gastos futuros ('GA') para los próximos meses basadas en los movimientos históricos.
-        """
-        from prophet import Prophet
-        import tempfile
-        # Filtrar movimientos de tipo 'GA'
-        df = self.df[self.df['naturaleza'] == 'GA'][['fecha', 'total']].copy()
-        if df.empty:
-            return "No hay datos de gastos ('GA') para generar predicciones."
-        print(df.head(5))
-        print(df.tail(5))
-        
-        # Preparar datos para Prophet
-        df_prophet = df.rename(columns={'fecha': 'ds', 'total': 'y'})
-        print(df_prophet.head(5))
-        print(df_prophet.tail(5))
+            pred.append({
+                "mes": fecha.strftime("%B %Y"),
+                "total": round(valor),
+                "min": round(valor * 0.85),
+                "max": round(valor * 1.15),
+            })
 
-        # Entrenar modelo Prophet
-        modelo = Prophet()
-        modelo.fit(df_prophet)
+        return pred
 
-        # Guardar modelo
-        if settings.DEBUG:
-            modelo_path = os.path.join(settings.MEDIA_ROOT, 'modelos', 'modelo_gastos.pkl')
-            os.makedirs(os.path.dirname(modelo_path), exist_ok=True)
-            joblib.dump(modelo, modelo_path)
-            print(f"Modelo guardado localmente en: {modelo_path}")
-        else:
-            # Guardar en archivo temporal Windows-safe y subir a GCS
-            tmp_file = tempfile.NamedTemporaryFile(suffix=".pkl", delete=False)
-            tmp_file.close()  # cerrar para que joblib pueda escribir
-            joblib.dump(modelo, tmp_file.name)
-            subir_modelo(local_file_path=tmp_file.name, blob_name='media/modelos/prophet_gastos.pkl')
-            print("Modelo subido a GCS correctamente.")
-            os.remove(tmp_file.name)  # borrar el temporal
-
-        # Generar predicción
-        future = modelo.make_future_dataframe(periods=meses_futuros, freq='M')
-        forecast = modelo.predict(future)
-        
-        # Filtrar solo meses futuros después del último dato histórico
-        ultimo_mes = df_prophet['ds'].dt.to_period('M').max()
-        predicciones = forecast[forecast['ds'].dt.to_period('M') > ultimo_mes][['ds','yhat','yhat_lower','yhat_upper']].head(meses_futuros)
-
-        # Convertir a lista de diccionarios
-        return predicciones.to_dict(orient='records')
+    def predecir_gastos(self, cant_meses_futuros=1):
+        df = self._preparar_dataset_gastos()
+        modelo = self._entrenar_modelo_gastos(df)
+        return self._predecir_futuro(modelo, df, cant_meses_futuros)
