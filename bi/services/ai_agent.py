@@ -8,6 +8,7 @@ import joblib
 import requests, json
 import pandas as pd
 from . import mineriaDatos as md
+from .gcp_gsc import subir_modelo
 from ..models import MovimientoEconomico
 
 url = "http://localhost:11434/api/generate"
@@ -76,7 +77,7 @@ def extraer_parametros(pregunta: str):
             parametros["anio"] = anio_actual - 1
     
     # ---- Categoría ----
-    categorias = ["EdP", "MO", "M", "H", "GG", "EPP"]  # Todas las categorías que manejes
+    categorias = [" EdP ", " MO ", " M ", " H ", " GG ", " EPP "]  # Todas las categorías que manejes
     for cat in categorias:
         if cat.lower() in pregunta.lower():
             parametros["categoria"] = cat
@@ -94,20 +95,44 @@ def extraer_parametros(pregunta: str):
     return parametros
 
 def entrenaModelo():
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
     # Ruta al CSV de entrenamiento
     ruta = os.path.join(settings.BASE_DIR, "config", "data", "intenciones.csv")
     df = pd.read_csv(ruta, comment="#")
+    
+    # Separar features y target
+    X = df["texto"]
+    y = df["intencion"]
+    
+    # Dividir en entrenamiento y prueba
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
     modelo = Pipeline([
         ("vectorizer", TfidfVectorizer()),
         ("classifier", LogisticRegression(max_iter=200))
     ])
+    
+    # Entrenar
+    modelo.fit(X_train, y_train)
 
-    modelo.fit(df["texto"], df["intencion"])
+    # Predicciones
+    y_pred = modelo.predict(X_test)
+    
+    # Métricas
+    print("=== Métricas de clasificación ===")
+    print(f"Accuracy: {accuracy_score(y_test, y_pred):.4f}")
+    print("Reporte de clasificación (precision, recall, f1-score por clase):")
+    print(classification_report(y_test, y_pred))
+    print("Matriz de confusión:")
+    print(confusion_matrix(y_test, y_pred))
 
     # Guardar modelo
     ruta_modelo = os.path.join(settings.BASE_DIR, "config", "modelo", "clasificador_intenciones.pkl")
     joblib.dump(modelo, ruta_modelo)
+    if settings.DEBUG == False:
+        # Subir el modelo a Google Cloud Storage
+        subir_modelo(ruta_modelo, "clasificador_intenciones.pkl")
 
     print("Modelo entrenado y guardado en:", ruta_modelo)
 

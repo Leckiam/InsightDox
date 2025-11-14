@@ -1,4 +1,9 @@
+from django.conf import settings
+from .gcp_gsc import subir_modelo
 import pandas as pd
+import numpy as np
+import os
+import joblib
 
 class AnalizadorMovimientos:
     def __init__(self, df: pd.DataFrame):
@@ -197,14 +202,38 @@ class AnalizadorMovimientos:
         }
 
     def _entrenar_modelo_gastos(self, df):
+        from sklearn.model_selection import train_test_split
         from sklearn.ensemble import RandomForestRegressor
+        from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
         X = df[['t']]
         y = df['total']
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        
         modelo = RandomForestRegressor(
             n_estimators=100,
             random_state=42
         )
         modelo.fit(X, y)
+        
+        # Predicciones en test
+        y_pred = modelo.predict(X_test)
+
+        # Métricas
+        mae = mean_absolute_error(y_test, y_pred)
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+        r2 = r2_score(y_test, y_pred)
+
+        print(f"MAE: {mae}, MSE: {mse}, RMSE: {rmse}, R2: {r2}")
+        
+        # Guardar el modelo localmente
+        local_path = os.path.join(settings.BASE_DIR, "config", "modelo", "predecir_gastos.pkl")
+        joblib.dump(modelo, local_path)
+        if settings.DEBUG == False:
+            # Subir el modelo a Google Cloud Storage
+            subir_modelo(local_path, "predecir_gastos.pkl")
+        
         return modelo
 
     def _predecir_futuro(self, modelo, df, n):
@@ -226,7 +255,7 @@ class AnalizadorMovimientos:
 
         return pred
 
-    def predecir_gastos(self, cant_meses_futuros=1):
+    def predecir_gastos(self, tipo=None,categoria=None,cant_meses_futuros=1):
         df = self._preparar_dataset_gastos()
         modelo = self._entrenar_modelo_gastos(df)
         return self._predecir_futuro(modelo, df, cant_meses_futuros)
