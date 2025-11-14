@@ -6,7 +6,7 @@ InsightDox es una plataforma web de gestión de información empresarial que cen
 - **Backend:** Django
 - **Base de datos:** MariaDB
 - **Almacenamiento y servicios en la nube:** Google Cloud Storage
-- **Manejo de archivos estáticos y media:** Whitenoise (para estáticos) y almacenamiento en `MEDIA` para Avatares e Informes de Costos
+- **Manejo de archivos estáticos y media:** Whitenoise (para estáticos) y almacenamiento en `MEDIA` para Avatares e Informes Costos
 - **API y análisis de datos:** Django REST Framework, pandas, scikit-learn
 - **Frontend y estilos:** Bootstrap 5, modales y previsualización de imágenes con JavaScript
 - **Seguridad y autenticación:** Django Auth, manejo de permisos y roles

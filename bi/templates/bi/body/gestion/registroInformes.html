@@ -1,11 +1,11 @@
 {% extends "bi/base.html" %}
-{% load static %}
+{% load static_version %}
 {% load currency %}
 
 {% block titulo %} Inicio {% endblock %}
 
 {% block statics %}
-<link rel="stylesheet" href="{% static 'bi/css/styleInformes.css' %}">
+<link rel="stylesheet" href="{% static_version 'bi/css/styleInformes.css' %}">
 {% endblock %}
 
 {% block classBody %}{% endblock %}
@@ -156,7 +156,7 @@
                     <div class="mb-3">
                         <label for="archivo_informe" class="form-label">Seleccionar archivo</label>
                         <input type="file" class="form-control" id="archivo_informe" name="archivo_informe"
-                            accept=".xlsx,.csv" required>
+                            accept=".xlsx,.csv" multiple required>
                         <div class="form-text">
                             Formatos permitidos: <strong>.xlsx</strong>, <strong>.csv</strong>
                         </div>
@@ -175,5 +175,6 @@
         </div>
     </div>
 </div>
+
 {% endif %}
 {% endblock %}

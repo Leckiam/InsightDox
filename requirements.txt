@@ -18,6 +18,9 @@ django-cors-headers==4.4.0
 #       Google Cloud (Storage y BigQuery)       #
 # Cliente general de Google Cloud
 google-cloud-core==2.4.1
+google-auth==2.41.1
+google-auth-oauthlib == 1.2.3
+google-api-python-client==2.187.0
 
 # Para trabajar con Cloud Storage
 django-storages==1.14.4
@@ -33,6 +36,8 @@ scikit-learn==1.5.2
 
 openpyxl==3.1.5
 
+prophet==1.2.1
+
 # Base de datos MariaDB/MySQL
 mysqlclient==2.2.4
 
@@ -40,10 +45,8 @@ mysqlclient==2.2.4
 llama-index==0.10.26
 llama-index-llms-ollama==0.1.2
 llama-index-vector-stores-chroma==0.1.6
-llama-index-embeddings-huggingface
-llama-index-embeddings-langchain
-chromadb==0.4.24
-langchain==0.1.14
+llama-index-embeddings-huggingface==0.2.3
+llama-index-embeddings-langchain==0.1.2
 
 # Soporte y análisis
 tqdm==4.66.2

@@ -129,6 +129,7 @@ LOGOUT_REDIRECT_URL = 'login'
 
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
 if DEBUG:
     #Archivos estáticos y media de forma local
     STATIC_URL = '/static/'
@@ -137,6 +138,7 @@ if DEBUG:
     MEDIA_ROOT = BASE_DIR / "media"
 else:
     # --- Configurar Ruta de Almacenamiento en GSC---
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
 
     from google.oauth2 import service_account
     import logging
@@ -145,7 +147,6 @@ else:
         config("GOOGLE_APPLICATION_CREDENTIALS")
     )
     GS_BUCKET_NAME = config("GS_BUCKET_NAME")
-
     MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/media/"
     STATIC_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/static/"
     
@@ -198,12 +199,13 @@ SESSION_COOKIE_SECURE = False
 SESSION_COOKIE_AGE = 86400  
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
-# Configuración de correo - FORZAR backend de consola para desarrollo
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-EMAIL_TIMEOUT = 30
+# Ruta a tu JSON descargado de Google
+CLIENT_SECRETS_FILE = config('CLIENT_SECRETS_FILE', default='')
 
+# Gmail autorizado para enviar correos
+EMAIL_OAUTH_ADDRESS = config('EMAIL_HOST_USER', default='')
+
+# Solo en producción
+EMAIL_OAUTH_REFRESH_TOKEN = 'TU_REFRESH_TOKEN'
+EMAIL_OAUTH_CLIENT_ID = 'TU_CLIENT_ID'
+EMAIL_OAUTH_CLIENT_SECRET = 'TU_CLIENT_SECRET'

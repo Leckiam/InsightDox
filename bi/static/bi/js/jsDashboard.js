@@ -232,12 +232,11 @@ function f_kpi_07() {
         }
     });
 }
-
 function f_kpi_08() {
+    //Gasto promedio por transacción (tipo barra horizontal simple)
     const kpi_08 = JSON.parse(document.getElementById('kpi_08').textContent);
-
-    const etiquetas = kpi_08[0]
-    const rentabilidad = kpi_08[1]
+    const etiquetas = kpi_08[0];
+    const rentabilidad = kpi_08[1];
 
     const rentabilidadColores = rentabilidad.map(v => v >= 0 ? 'rgba(75,192,192,0.7)' : 'rgba(255,99,132,0.7)');
     new Chart(document.getElementById('graficoRentabilidadMensual'), {
@@ -247,7 +246,7 @@ function f_kpi_08() {
             datasets: [{
                 label: 'Rentabilidad (%)',
                 data: rentabilidad,
-                backgroundColor: rentabilidadColores
+                backgroundColor: rentabilidadColores,
             }]
         },
         options: {
@@ -260,12 +259,16 @@ function f_kpi_08() {
             },
             plugins: {
                 legend: { display: false },
+                title: {
+                    display: true,
+                    text: 'Rentabilidad mensual en el año'
+                },
                 tooltip: {
                     callbacks: {
                         label: ctx => `${ctx.parsed.x.toFixed(1)}%`
                     }
                 }
-            }
+            },
         }
     });
 }

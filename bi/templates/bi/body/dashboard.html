@@ -1,5 +1,5 @@
 {% extends "bi/base.html" %}
-{% load static %}
+{% load static_version %}
 
 {% block titulo %} Dashboard {% endblock %}
 
@@ -87,12 +87,12 @@ class="main-content"
                     {% if data.kpi_08 %}
                     <canvas id="graficoRentabilidadMensual"></canvas>
                     {% else %}
-                    <strong>Rentabilidad (%) - No existen datos</strong>
+                    <strong>Rentabilidad - No existen datos</strong>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </main>
-<script src="{% static 'bi/js/jsDashboard.js' %}"></script>
+<script src="{% static_version 'bi/js/jsDashboard.js' %}"></script>
 {% endblock %}

@@ -5,7 +5,6 @@ from django.core.mail import send_mail
 from django.db import transaction
 from django.contrib.auth.models import User
 from datetime import date
-from decouple import config
 from .models import InformeCostos,Profile,Roles,MovimientoEconomico
 from . import lecturaxlsx,permisos,obtenerKpis
 
@@ -45,109 +44,104 @@ def logOut(request):
     logout(request)
     return redirect(to='login')
 
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from .services import oauth2
+
 def recoverPass(request):
     if request.method != "POST":
-        return render(request,urlBase+'recoverPass.html')
-    else:
-        email = request.POST["emailRec"]
+        return render(request, urlBase + 'recoverPass.html')
+    
+    email = request.POST.get("emailRec")
+    
+    try:
+        user = User.objects.get(email=email)
         
-        # Buscar usuario por email
-        try:
-            user = User.objects.get(email=email)
-            
-            # Generar token de recuperación (simple implementación)
-            from django.contrib.auth.tokens import default_token_generator
-            from django.utils.http import urlsafe_base64_encode
-            from django.utils.encoding import force_bytes
-            
-            token = default_token_generator.make_token(user)
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            
-            # Crear URL de recuperación usando el host de la petición (robusto en desarrollo)
-            reset_url = f"{request.scheme}://{request.get_host()}/reset-password/{uid}/{token}/"
-            
-            # Enviar correo
-            subject = 'Recuperación de Contraseña - InsightDox'
-            message = f'''
-            Hola {user.first_name},
-            
-            Has solicitado recuperar tu contraseña en InsightDox.
-            
-            Por favor, haz clic en el siguiente enlace para restablecer tu contraseña:
-            {reset_url}
-            
-            Si no solicitaste este cambio, puedes ignorar este correo.
-            
-            Saludos,
-            El equipo de InsightDox
-            '''
-            
-            # Siempre usar backend de consola para evitar problemas SMTP
-            print(f"\n{'='*60}")
-            print(f"CORREO DE RECUPERACIÓN (Modo Desarrollo)")
-            print(f"{'='*60}")
-            print(f"Para: {email}")
-            print(f"Asunto: {subject}")
-            print(f"Mensaje:\n{message}")
-            print(f"{'='*60}\n")
-            
-            msg = {
-                'success': True,
-                'message': f'Correo de recuperación generado para {email}. En producción, se enviará a tu bandeja de entrada.',
-                'reset_url': reset_url
-            }
-            
-        except User.DoesNotExist:
-            msg = {
-                'e_login': email,
-                'error': 'El correo ingresado no está registrado en el sistema. Por favor, verifica e intenta nuevamente.'
-            }
-        except Exception as e:
-            msg = {
-                'error': f'Ocurrió un error al enviar el correo: {str(e)}'
-            }
-            
-        return render(request,urlBase+'recoverPass.html',msg)
+        # Generar token y UID
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        reset_url = f"{request.scheme}://{request.get_host()}/reset-password/{uid}/{token}/"
+        
+        subject = 'Recuperación de Contraseña - InsightDox'
+        message = f"""
+        Hola {user.first_name},
+
+        Has solicitado recuperar tu contraseña en InsightDox.
+
+        Por favor, haz clic en el siguiente enlace para restablecer tu contraseña:
+        {reset_url}
+
+        Si no solicitaste este cambio, puedes ignorar este correo.
+
+        Saludos,
+        El equipo de InsightDox
+"""
+        # --- Enviar correo usando Gmail API ---
+        oauth2.enviar_correo_gmail_api(email, subject, message)
+
+        msg = {
+            'success': True,
+            'message': f'Correo de recuperación enviado a {email}. Revisa tu bandeja de entrada.',
+            'reset_url': reset_url
+        }
+        
+    except User.DoesNotExist:
+        msg = {
+            'e_login': email,
+            'error': 'El correo ingresado no está registrado en el sistema. Por favor, verifica e intenta nuevamente.'
+        }
+    except Exception as e:
+        msg = {
+            'error': f'Ocurrió un error al enviar el correo: {str(e)}'
+        }
+    
+    return render(request, urlBase + 'recoverPass.html', msg)
+
+from django.contrib import messages
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
 
 def reset_password_confirm(request, uidb64, token):
-    from django.contrib.auth.tokens import default_token_generator
-    from django.utils.http import urlsafe_base64_decode
-    from django.utils.encoding import force_str
-    
+    """
+    Vista para restablecer la contraseña usando UID y token de recuperación.
+    """
     try:
         # Decodificar el UID
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
-    
+
     if user is not None and default_token_generator.check_token(user, token):
+        error = None
         if request.method == 'POST':
             new_password = request.POST.get('new_password')
             confirm_password = request.POST.get('confirm_password')
-            
-            if new_password and confirm_password and new_password == confirm_password:
-                if len(new_password) >= 8:
-                    user.set_password(new_password)
-                    user.save()
-                    
-                    # Mensaje de éxito
-                    from django.contrib import messages
-                    messages.success(request, 'Tu contraseña ha sido restablecida exitosamente. Ahora puedes iniciar sesión con tu nueva contraseña.')
-                    return redirect('login')
-                else:
-                    error = 'La contraseña debe tener al menos 8 caracteres.'
+
+            if not new_password or not confirm_password:
+                error = 'Las contraseñas no pueden estar vacías.'
+            elif new_password != confirm_password:
+                error = 'Las contraseñas no coinciden.'
+            elif len(new_password) < 8:
+                error = 'La contraseña debe tener al menos 8 caracteres.'
             else:
-                error = 'Las contraseñas no coinciden o están vacías.'
-        else:
-            error = None
-            
+                # Guardar nueva contraseña
+                user.set_password(new_password)
+                user.save()
+                messages.success(
+                    request,
+                    'Tu contraseña ha sido restablecida exitosamente. Ahora puedes iniciar sesión con tu nueva contraseña.'
+                )
+                return redirect('login')
+
         return render(request, urlBase + 'reset_password_confirm.html', {'error': error})
     else:
         # Token inválido o expirado
-        from django.contrib import messages
         messages.error(request, 'El enlace de recuperación es inválido o ha expirado.')
-        return redirect('recover')
+        return redirect('login')
 
 def home(request):
     if request.user.is_authenticated:
@@ -226,7 +220,9 @@ def addUser(request):
         username_tmp = request.POST.get("username")
         email_tmp = request.POST.get("correo")
         nombre_tmp = request.POST.get("nombre")
-        password_tmp = request.POST.get("contrasena")
+        apellido_tmp = request.POST.get("apellido")
+        password1_tmp = request.POST.get("contrasena1")
+        password2_tmp = request.POST.get("contrasena2")
         rolID_tmp = request.POST.get("rol")
         avatar_tmp = request.FILES.get("avatar")
         if avatar_tmp == None:
@@ -246,11 +242,15 @@ def addUser(request):
                 if not Profile.objects.filter(user=user_tmp).exists():
                     addProfile(user_tmp,avatar_tmp,rolID_tmp)
             else:
-                user_tmp = User.objects.create_user(email=email_tmp,
-                                            username=username_tmp,
-                                            password=password_tmp,
-                                            first_name=nombre_tmp)
-                addProfile(user_tmp,avatar_tmp,rolID_tmp)
+                if password1_tmp == password2_tmp:
+                    user_tmp = User.objects.create_user(email=email_tmp,
+                                                username=username_tmp,
+                                                password=password1_tmp,
+                                                first_name=nombre_tmp,
+                                                last_name=apellido_tmp)
+                    addProfile(user_tmp,avatar_tmp,rolID_tmp)
+                else:
+                    print('Contraseñas no coinciden')
         except:
             print('Fallo el agregar Usuario')
     next_url = request.GET.get('next', 'home')
@@ -338,7 +338,6 @@ def addInformeCosto(request):
     if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
         informe_excel = request.FILES['archivo_informe']
         df = lecturaxlsx.procesar_informe(informe_excel)
-        url='https://storage.googleapis.com/mi-bucket/informes/'
         mes,anno = lecturaxlsx.obtenerMesAnno(df)
         
         df_ventas = df[df['Categoria'] == 'EdP']
@@ -509,8 +508,7 @@ from django.http import StreamingHttpResponse
 @login_required
 @api_view(['POST'])
 def consultar_ia(request):
-    prompt=ai_agent.obtenerPrompt(request)
-    return StreamingHttpResponse(ai_agent.generar_respuesta(prompt), content_type='text/plain')
+    return StreamingHttpResponse(ai_agent.generarRespuesta(request), content_type='text/plain')
 
 from django.conf import settings
 

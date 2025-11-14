@@ -2,16 +2,13 @@ function submitRec() {
     buttonDisabled(true, 'btnSubmit');
     ocultarError();
 
-    // Obtener el campo emailRec correcto
-    const email = document.getElementsByName("emailRec")[0]; 
+    const email = document.getElementsByName("emailRec")[0];
     
     if (!valRecover(email)) {
-        event.preventDefault(); // event.preventDefault() debe estar aquí
+        event.preventDefault();
         buttonDisabled(false, 'btnSubmit');
-        return; // Detiene el envío
+        return;
     }
-    
-    return true; // Permitir el envío del formulario
 }
 function valRecover(email) {
     estado = true;
