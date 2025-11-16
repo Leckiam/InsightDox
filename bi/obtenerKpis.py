@@ -1,11 +1,24 @@
-from django.db.models import Sum,Count
-from datetime import date,timedelta
+from django.db.models import Sum
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
 from dateutil.relativedelta import relativedelta
-import datetime
+from datetime import date,datetime
 from . models import InformeCostos, MovimientoEconomico
 
-def obtn_meses_rango():
-    hoy = date.today()
+def obtDF():
+    df = pd.DataFrame(list(MovimientoEconomico.objects.all().values(
+        'descripcion', 'categoria', 'naturaleza', 'cantidad', 'unidad',
+        'precio_unitario', 'total', 'fecha', 'informe__observaciones'
+    )))
+    df.rename(columns={'informe__observaciones': 'observacion'}, inplace=True)
+    return df
+
+def obtn_meses_rango(hoy=True):
+    if hoy == True:
+        hoy = date.today()
+    else:
+        lastMovEco = MovimientoEconomico.objects.all().order_by('-id').first()
+        hoy = lastMovEco.fecha
     
     # Generar los últimos 12 meses desde el último registro
     meses_rango = []
@@ -95,7 +108,19 @@ def obtKpi_03():
             
     etiquetas_crecimiento = etiquetas[1:]
 
-    return [[etiquetas, num_transacciones_mensual],[etiquetas_crecimiento, crecimiento_mensual]]
+    desc = {
+        "explicacion": "Este gráfico muestra cuántas transacciones se realizaron cada mes y cómo fue su crecimiento porcentual. Las barras indican el número total de transacciones y la línea muestra si hubo aumento o disminución en comparación con el mes anterior.",
+        "interpretacion": [
+            "Si la línea sube → hay más actividad comercial.",
+            "Si baja → disminuye el flujo de transacciones."
+            ]
+    }
+
+    valores = [[etiquetas, num_transacciones_mensual],[etiquetas_crecimiento, crecimiento_mensual]]
+    kpi_id = "kpi_03"
+    canva_id = "ventasGastosChart"
+    descripcion = desc
+    return [valores,kpi_id,canva_id,descripcion]
 
 def obtKpi_04():
     #Ticket Promedio Mensual
@@ -119,8 +144,19 @@ def obtKpi_04():
         
         etiquetas.append(f"{MESES_CHOICES[mes][:3]} {anio}")
         valores_ticket.append(round(ticket, 2))  # opcional: redondear a 2 decimales
-
-    return [etiquetas, valores_ticket]
+    
+    desc = {
+        "explicacion": "Mide el monto promedio que los clientes gastan por transacción cada mes. Permite entender cuánto está dispuesto a pagar un cliente en cada compra.",
+        "interpretacion": [
+            "Si sube → los clientes gastan más en cada compra.",
+            "Si baja → las ventas por cliente son más bajas."
+            ]
+    }
+    valores = [etiquetas, valores_ticket]
+    kpi_id = "kpi_04"
+    canva_id = "graficoTicket"
+    descripcion = desc
+    return [valores,kpi_id,canva_id,descripcion]
 
 def obtKpi_05():
     #Gasto promedio por transacción
@@ -139,7 +175,19 @@ def obtKpi_05():
         etiquetas.append(f"{MESES_CHOICES[mes][:3]} {anio}")
         valores.append(round(gasto_promedio,2))
 
-    return [etiquetas, valores]
+    desc = {
+        "explicacion": "Indica cuánto se gasta en promedio por cada transacción. Ayuda a evaluar la eficiencia de los costos operacionales asociados a las ventas.",
+        "interpretacion": [
+            "Un valor bajo → proceso eficiente.",
+            "Un valor alto → los costos por venta están aumentando."
+            ]
+    }
+    
+    valores = [etiquetas, valores]
+    kpi_id = "kpi_05"
+    canva_id = "graficoGastoPromedio"
+    descripcion = desc
+    return [valores,kpi_id,canva_id,descripcion]
 
 def obtKpi_06():
     #Gráfico de eficiencia de gastos
@@ -156,8 +204,20 @@ def obtKpi_06():
         porcentaje = (total_gastos / total_ventas * 100) if total_ventas else 0
         etiquetas.append(f"{MESES_CHOICES[mes][:3]} {anio}")
         valores.append(round(porcentaje,2))
-
-    return [etiquetas, valores]
+        
+    desc = {
+        "explicacion": "Este indicador muestra qué porcentaje de las ventas totales se destina a gastos. Permite evaluar la eficiencia operativa de la empresa.",
+        "interpretacion": [
+            "Bajo porcentaje → buena eficiencia.",
+            "Alto porcentaje → los gastos están consumiendo la rentabilidad."
+            ]
+    }
+    
+    valores = [etiquetas, valores]
+    kpi_id = "kpi_06"
+    canva_id = "graficoEficienciaGastos"
+    descripcion = desc
+    return [valores,kpi_id,canva_id,descripcion]
 
 def obtKpi_07():
     #evolucion_y_eficiencia_gastos
@@ -174,7 +234,19 @@ def obtKpi_07():
         etiquetas.append(f"{MESES_CHOICES[mes][:3]} {anio}")
         gastos_mensuales.append(float(total_gastos))
     
-    return [etiquetas, gastos_mensuales]
+    desc = {
+        "explicacion": "Muestra cómo han variado los gastos totales mes a mes. Permite identificar tendencias de aumento o reducción en los costos de operación.",
+        "interpretacion": [
+            "Si la línea sube constantemente → gastos creciendo.",
+            "Si baja → la empresa está controlando mejor sus costos."
+            ]
+    }
+    
+    valores = [etiquetas, gastos_mensuales]
+    kpi_id = "kpi_07"
+    canva_id = "graficoEvolucionGastos"
+    descripcion = desc
+    return [valores,kpi_id,canva_id,descripcion]
     
 def obtKpi_08():
     meses_rango = obtn_meses_rango()
@@ -211,4 +283,16 @@ def obtKpi_08():
         etiquetas.append(f"{MESES_CHOICES[mes][:3]} {anio}")
         rentabilidad_mensual.append(round(rent_mes, 2))
 
-    return [etiquetas, rentabilidad_mensual]
+    desc = {
+        "explicacion": "Indica el porcentaje de rentabilidad obtenido cada mes del año. Valores positivos indican ganancias y valores negativos indican pérdidas.",
+        "interpretacion": [
+            "Barras verdes → meses con rentabilidad positiva.",
+            "Barras rojas → meses con pérdida (rentabilidad negativa)."
+            ]
+    }
+    
+    valores = [etiquetas, rentabilidad_mensual]
+    kpi_id = "kpi_08"
+    canva_id = "graficoRentabilidadMensual"
+    descripcion = desc
+    return [valores,kpi_id,canva_id,descripcion]

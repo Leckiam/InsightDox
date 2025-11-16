@@ -88,8 +88,8 @@ class="main-content"
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="fw-bold mb-3">Asistente IA</h5>
-                    <textarea id="pregunta-ia" class="form-control mb-3" rows="3"
-                        placeholder="Ej: ¿Qué tendencia se espera en ventas para el próximo trimestre?"></textarea>
+                    <textarea id="pregunta-ia" class="form-control mb-3" rows="4"
+                        placeholder="Ej: ¿De cuanto seran los gastos el proximo mes?"></textarea>
                     <button id="btn-consultar" class="btn btn-primary">Consultar</button>
                     <div id="respuesta-ia" class="mt-3 text-muted small">[Aquí aparecerá la respuesta de la IA]</div>
                 </div>
@@ -97,9 +97,6 @@ class="main-content"
         </div>
         {% include "bi/body/components/rol/adm.html" %}
     </div>
-
-    <!-- Alertas -->
-    {% include "bi/body/components/alertas.html" %}
 
 </main>
 <script src="{% static_version 'bi/js/jsIndexKPI.js' %}"></script>

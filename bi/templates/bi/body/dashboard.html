@@ -5,6 +5,7 @@
 
 {% block statics %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="{% static_version 'bi/css/styleDashboard.css'%}">
 {% endblock %}
 
 {% block classBody %}
@@ -20,79 +21,36 @@ class="main-content"
     <!-- Gráficas -->
     
     <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            {{ data.kpi_03|json_script:"kpi_03" }}
-            <div class="card shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-center text-muted">
-                    {% if data.kpi_03 %}
-                    <canvas id="ventasGastosChart"></canvas>
-                    {% else %}
-                    <strong>Número de transacciones y crecimiento mensual - No existen datos</strong>
-                    {% endif %}
+        {% for key, item in data.items %}
+            {% with valores=item.0 kpi_id=item.1 canva_id=item.2 descripcion=item.3 %}
+            <div class="col-lg-6">
+                {{ valores|json_script:kpi_id }}
+                <div class="card shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center justify-content-center text-muted" style="position: relative;">
+                        <div class="tooltip-container" style="overflow: visible;">
+                            <span class="tooltip-icon">ⓘ</span>
+                            <div class="tooltip-box">
+                                <strong>Explicación:</strong> {{ descripcion.explicacion }} <br>
+                                <strong>Interpretación:</strong>
+                                <ul style="padding-left: 18px; margin: 0;">
+                                {% for interpretacion in descripcion.interpretacion %}
+                                    <li>{{ interpretacion }}</li>
+                                {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% if valores %}
+                        <canvas id="{{ canva_id }}" style="height: 260px;"></canvas>
+                        {% else %}
+                        <strong> No existen datos </strong>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-6">
-            {{ data.kpi_04|json_script:"kpi_04" }}
-            <div class="card shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-center text-muted">
-                    {% if data.kpi_04 %}
-                    <canvas id="graficoTicket"></canvas>
-                    {% else %}
-                    <strong>Ticket Promedio Mensual - No existen datos</strong>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            {{ data.kpi_05|json_script:"kpi_05" }}
-            <div class="card shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-center text-muted">
-                    {% if data.kpi_05 %}
-                    <canvas id="graficoGastoPromedio"></canvas>
-                    {% else %}
-                    <strong>Ticket Promedio Mensual - No existen datos</strong>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            {{ data.kpi_06|json_script:"kpi_06" }}
-            <div class="card shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-center text-muted">
-                    {% if data.kpi_06 %}
-                    <canvas id="graficoEficienciaGastos"></canvas>
-                    {% else %}
-                    <strong>Ticket Promedio Mensual - No existen datos</strong>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            {{ data.kpi_07|json_script:"kpi_07" }}
-            <div class="card shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-center text-muted">
-                    {% if data.kpi_07 %}
-                    <canvas id="graficoEvolucionGastos"></canvas>
-                    {% else %}
-                    <strong>Evolución mensual de gastos - No existen datos</strong>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            {{ data.kpi_08|json_script:"kpi_08" }}
-            <div class="card shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-center text-muted">
-                    {% if data.kpi_08 %}
-                    <canvas id="graficoRentabilidadMensual"></canvas>
-                    {% else %}
-                    <strong>Rentabilidad - No existen datos</strong>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+            {% endwith %}
+        {% endfor %}
     </div>
 </main>
+
 <script src="{% static_version 'bi/js/jsDashboard.js' %}"></script>
 {% endblock %}

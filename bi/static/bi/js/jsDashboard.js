@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", function () {
     f_kpi_06();
     f_kpi_07();
     f_kpi_08();
-    f_kpi_09();
 })
 
 function f_kpi_03() {
@@ -42,6 +41,7 @@ function f_kpi_03() {
             ]
         },
         options: {
+            maintainAspectRatio: false,
             responsive: true,
             interaction: {
                 mode: 'index',
@@ -106,6 +106,7 @@ function f_kpi_04() {
             }]
         },
         options: {
+            maintainAspectRatio: false,
             responsive: true,
             plugins: {
                 title: {
@@ -145,6 +146,7 @@ function f_kpi_05() {
             }]
         },
         options: {
+            maintainAspectRatio: false,
             indexAxis: 'y',
             plugins: {
                 legend: { display: false },
@@ -179,6 +181,7 @@ function f_kpi_06() {
             }]
         },
         options: {
+            maintainAspectRatio: false,
             responsive: true,
             plugins: {
                 title: {
@@ -216,6 +219,7 @@ function f_kpi_07() {
             }]
         },
         options: {
+            maintainAspectRatio: false,
             responsive: true,
             plugins: {
                 title: {
@@ -250,6 +254,7 @@ function f_kpi_08() {
             }]
         },
         options: {
+            maintainAspectRatio: false,
             indexAxis: 'y',
             scales: {
                 x: {
