@@ -25,10 +25,8 @@ def login_view(request):
                 login(request, user)
                 return redirect("home")
             else:
-                msg={
-                    'error1': 'Correo o contraseña incorrectos.'
-                }
-                return render(request, urlBase+"login.html",context=msg)
+                messages.error(request, 'Correo o contraseña incorrectos.')
+                return render(request, urlBase+"login.html")
         return render(request, urlBase+"login.html")
     else:
         return redirect("home")
@@ -81,23 +79,14 @@ def recoverPass(request):
         # --- Enviar correo usando Gmail API ---
         oauth2.enviar_correo_gmail_api(email, subject, message)
 
-        msg = {
-            'success': True,
-            'message': f'Correo de recuperación enviado a {email}. Revisa tu bandeja de entrada.',
-            'reset_url': reset_url
-        }
-        
-    except User.DoesNotExist:
-        msg = {
-            'e_login': email,
-            'error': 'El correo ingresado no está registrado en el sistema. Por favor, verifica e intenta nuevamente.'
-        }
-    except Exception as e:
-        msg = {
-            'error': f'Ocurrió un error al enviar el correo: {str(e)}'
-        }
+        messages.success(request, f'Correo de recuperación enviado a {email}. Revisa tu bandeja de entrada.')
     
-    return render(request, urlBase + 'recoverPass.html', msg)
+    except User.DoesNotExist:
+        messages.error(request, f'El correo {email} no está registrado en el sistema. Por favor, verifica e intenta nuevamente.')
+    except Exception as e:
+        messages.error(request, f'Ocurrió un error al enviar el correo: {str(e)}')
+
+    return render(request, urlBase + 'recoverPass.html')
 
 from django.contrib import messages
 from django.contrib.auth.tokens import default_token_generator
@@ -388,9 +377,23 @@ def addInformeCosto(request):
         except Exception as e:
             # Capturar errores de procesamiento del archivo (formato inválido, fechas NaN, etc.)
             err_msg = str(e)
-            # Mensaje amigable para el usuario, manteniendo el detalle en logs
-            messages.error(request, f"No se pudo procesar el archivo: {err_msg}")
+            # Determinar mensaje amigable para usuario final según patrón
+            user_msg = 'No se pudo procesar el archivo. Asegúrate de usar el formato de informe correcto (columnas: N°, Fecha, Descripción, Categoria, Tipo, Cantidad, Unidad, Precio unitario, Total) y que no existan celdas vacías en las columnas numéricas.'
+
+            # Mensajes más específicos según contenido del error
+            low = err_msg.lower()
+            if 'nan' in low or 'cannot convert' in low or 'could not convert' in low:
+                user_msg = 'El archivo contiene celdas numéricas vacías o valores no válidos. Revisa las columnas "N°", "Cantidad", "Precio unitario" y "Total" y vuelve a intentarlo.'
+            elif 'to_datetime' in low or 'dayfirst' in low or 'timestamp' in low:
+                user_msg = 'No se pudo extraer la fecha desde el archivo. Verifica que la columna "Fecha" tenga valores con formato válido.'
+            elif 'openpyxl' in low or 'zipfile' in low or 'file format' in low:
+                user_msg = 'El archivo no parece ser un .xlsx válido. Asegúrate de subir un archivo .xlsx (o .csv) con el formato correcto.'
+            elif 'empty' in low or 'emptydataerror' in low:
+                user_msg = 'El archivo está vacío o no contiene las filas esperadas a partir de la fila 12. Verifica el contenido del informe.'
+
+            # Log detallado para debugging y enviar mensaje amigable al usuario
             print(f"Error al procesar informe: {err_msg}")
+            messages.error(request, user_msg)
             return redirect(next_url)
 
     return redirect('home')
