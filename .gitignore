@@ -14,7 +14,7 @@ staticfiles/
 
 # Entornos virtuales y dependencias
 .venv/
-myvenv/
+fullstack/myvenv/
 env/
 
 # Archivos de compilación
@@ -32,23 +32,25 @@ obj/
 *.pem
 *.key
 *.crt
-config/credentials/
+fullstack/config/credentials/
 
 # Bases de datos y backups
 *.sql
 *.sqlite
 *.bak
 
+# Modelos
+*.pkl
+
 # Python
 __pycache__/
 *.py[cod]
 
 # Ignorar todas las imágenes en media/avatars
-media/*
+fullstack/media/*
 
 # Excepto avatar por defecto
-!media/avatars/user_0_unknown.jpg
+!fullstack/media/avatars/user_0_unknown.jpg
 
 #Datos Simulados
 DtSimulations/
-excel.py

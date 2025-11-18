@@ -1,0 +1,104 @@
+{% extends "bi/base.html" %}
+{% load static_version %}
+{% load currency %}
+
+{% block titulo %} Inicio {% endblock %}
+
+{% block statics %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block classBody %}
+{% endblock %}
+
+{% block classDiv %}
+class="main-content"
+{% endblock %}
+
+{% block contenido %}
+<!-- Main Dashboard -->
+<main class="container py-4">
+    <!-- KPIs -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted">Ventas (Mes)</h6>
+                    <h3 class="text-success fw-bold">{{ ultimo_Informe.resumen_ventas|default:"0"|clp }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted">Gastos (Mes)</h6>
+                    <h3 class="text-danger fw-bold">{{ ultimo_Informe.resumen_gastos|default:"0"|clp }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted">Balance</h6>
+                    <h3 class="text-primary fw-bold">{{ balance|default:"0"|clp }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted">Remuneración</h6>
+                    <h3 class="text-purple fw-bold">{{ ultimo_Informe.resumen_remuneraciones|default:"0"|clp }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            {{ data.kpi_01|json_script:"kpi_01" }}
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-center text-muted">
+                    {% if data.kpi_01 %}
+                        <canvas id="ventasGastosChart"></canvas>
+                    {% else %}
+                        <strong>Ventas vs Gastos + Remuneración Mensual - No existen datos</strong>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            {{ data.kpi_02|json_script:"kpi_02" }}
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-center text-muted">
+                    {% if data.kpi_02 %}
+                        <canvas id="gastosCategoriaChart"></canvas>
+                    {% else %}
+                        <strong>Gastos por Categoría del Mes mas Actual - No existen datos</strong>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- IA y Reportes -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">Asistente IA</h5>
+                    <textarea id="pregunta-ia" class="form-control mb-3" rows="4"
+                        placeholder="Ej: ¿De cuanto seran los gastos el proximo mes?"></textarea>
+                    <button id="btn-consultar" class="btn btn-primary">Consultar</button>
+                    <div id="respuesta-ia" class="mt-3 text-muted small">[Aquí aparecerá la respuesta de la IA]</div>
+                </div>
+            </div>
+        </div>
+        {% include "bi/body/components/rol/adm.html" %}
+    </div>
+
+</main>
+<script src="{% static_version 'bi/js/jsIndexKPI.js' %}"></script>
+<script src="{% static_version 'bi/js/jsIndexIA.js' %}"></script>
+{% endblock %}
