@@ -60,7 +60,7 @@
 <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form id="userForm" method="POST" enctype="multipart/form-data" onsubmit="validarPasswords(event)">
+            <form id="userForm" method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="modal-header">
                     <h5 class="modal-title" id="userModalLabel">Agregar nuevo usuario</h5>

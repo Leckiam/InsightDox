@@ -51,7 +51,8 @@ class AnalizadorMovimientos:
         df = self._filtrar_fecha(dia, mes, anio)
         if tipo:
             df = df[df['naturaleza'] == tipo]
-        return len(df) if not df.empty else 0
+        cantidad= len(df) if not df.empty else 0
+        return {"cantidad_movimientos":cantidad}
 
     def categorias_por_tipo(self, tipo=None, dia=None, mes=None, anio=None, ordenar_por="total", descendente=True):
         """
@@ -87,7 +88,8 @@ class AnalizadorMovimientos:
 
     def cantidad_movimientos_por_categoria(self, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
-        return df.groupby('categoria').size().to_dict()
+        cantidad=df.groupby('categoria').size().to_dict()
+        return {"cantidad_movimiento_por_categoria":cantidad}
 
     def estadisticas_basicas_tipo(self, tipo, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
@@ -112,23 +114,28 @@ class AnalizadorMovimientos:
 
     def precio_unitario_extremos(self, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
-        return self._extremos_por_columna(df, "precio_unitario")
+        valor = self._extremos_por_columna(df, "precio_unitario")
+        return {"precio_unitario_extremos": valor}
 
     def total_extremos(self, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
-        return self._extremos_por_columna(df, "total")
+        valor = self._extremos_por_columna(df, "total")
+        return {"total_extremos": valor}
 
     def cantidad_extremos(self, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
-        return self._extremos_por_columna(df, "cantidad")
+        valor = self._extremos_por_columna(df, "cantidad")
+        return {"cantidad_extremos": valor}
 
     def movimiento_mas_reciente(self, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
-        return df.loc[df['fecha'].idxmax()].to_dict() if not df.empty else None
+        valor = df.loc[df['fecha'].idxmax()].to_dict() if not df.empty else None
+        return {"movimiento_mas_reciente": valor}
 
     def movimiento_mas_antiguo(self, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
-        return df.loc[df['fecha'].idxmin()].to_dict() if not df.empty else None
+        valor = df.loc[df['fecha'].idxmin()].to_dict() if not df.empty else None
+        return {"movimiento_mas_antiguo": valor}
     
     def _preparar_dataset_gastos(self):
         df = self.df[self.df['naturaleza'] == 'GA'][['fecha', 'total']]
@@ -139,12 +146,14 @@ class AnalizadorMovimientos:
     def total_por_tipo(self, tipo, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
         df = df[df["naturaleza"] == tipo]
-        return df["total"].sum() if not df.empty else 0
+        valor = df["total"].sum() if not df.empty else 0
+        return {"suma_total_por_tipo": valor}
 
     def total_por_categoria(self, categoria, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
         df = df[df["categoria"].str.lower() == categoria.lower()]
-        return df["total"].sum() if not df.empty else 0
+        valor = df["total"].sum() if not df.empty else 0
+        return {"suma_total_por_categoria": valor}
 
     def distribucion_por_tipo(self, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)

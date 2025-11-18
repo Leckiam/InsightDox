@@ -81,15 +81,15 @@ function abrirModalEditar(id, username,nombre,apellido, correo, rolId, avatar_ur
     }
 }
 
-function validarPasswords(event) {
+function validarPasswords() {
     const pass1 = document.getElementById('modalPassword1').value.trim();
     const pass2 = document.getElementById('modalPassword2').value.trim();
-
+    
+    // Verifica si contraseña coinciden
     if (pass1 !== pass2) {
-        event.preventDefault();
         return false;
-    }
-    return true;
+    } 
+    return true
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -98,6 +98,31 @@ document.addEventListener("DOMContentLoaded", () => {
     const rows = Array.from(container.querySelectorAll('.usuario-row'));
     let currentPage = 1;
     const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+    var form = document.getElementById('userForm');
+    form.addEventListener("submit", function (event) {
+        const errorPass = document.getElementById("errorPass");
+
+        // Evita que el form se envíe inmediatamente
+        event.preventDefault();
+
+        // Verifica si contraseña coinciden
+        if (validarPasswords()) {
+            try {
+                errorPass.style.display = 'none'
+            } catch (e) {
+                console.error("Toast error:", e);
+            }
+            setTimeout(() => form.submit(), 100);
+            return; // no se envía nada
+        } else {
+            try {
+                errorPass.style.display = 'block'
+            } catch (e) {
+                console.error("Toast error:", e);
+            }
+        }
+    });
 
     function showPage(page) {
         const start = (page - 1) * rowsPerPage;

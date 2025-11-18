@@ -168,7 +168,10 @@ def home(request):
             print("Ocurrió un error:", e)
             context={
                 "ultimo_Informe": InformeCostos(),
-                "balance": 0
+                "balance": 0,
+                "classToast":"secondary",
+                "idToast":"updateFiles",
+                "bodyToast":"Subiendo..."
             }
         return render(request,urlBase+'index.html',context=context)
     else:
@@ -325,7 +328,10 @@ def gestUsers(request):
         allRoles = Roles.objects.all()
         context={
             "all_Usuarios":allUsers,
-            "all_roles":allRoles
+            "all_roles":allRoles,
+            "classToast":"danger",
+            "idToast":"errorPass",
+            "bodyToast":"Su contraseña no coincide"
             }
         return render(request, urlBase+"gestion/gestionUsers.html",context)
     else:
@@ -440,7 +446,10 @@ def gestInformes(request):
     context = {
         "all_Informes": page_obj,
         "selected_anno": anno,
-        "annos": annos
+        "annos": annos,
+        "classToast":"classToast",
+        "idToast":"updateFiles",
+        "bodyToast":"Subiendo..."
     }
     return render(request, urlBase + "gestion/registroInformes.html", context)
 

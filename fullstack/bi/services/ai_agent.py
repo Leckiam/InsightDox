@@ -249,7 +249,8 @@ def generarRespuesta(request):
     ## Eres un asistente contable que responde brevemente en español sobre movimientos económicos de Fenix Ing. y Servicios Ltda. y la fecha actual es '{fecha_formateada}'
 
     Instrucciones:
-    - Valor monetarios en pesos chilenos ($ CLP)
+    - Valor monetarios (precio_unitario y total) en pesos chilenos ($ CLP)
+    - Numeros deben estar en formato X.XXX y decir valor exacto.
 
     Datos:
     - Pregunta: '{ pregunta }'

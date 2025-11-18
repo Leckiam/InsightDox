@@ -41,12 +41,17 @@
             {% endif %}
         {% endfor %}
     {% endif %}
-    <div class="toast align-items-center text-bg-secondary border-0 mb-2" id="updateFiles" role="alert" aria-live="polite"
-        aria-atomic="true" data-bs-autohide="false" style='display: None;'>
+    {% if classToast %}
+    <div class="toast align-items-center text-bg-{{ classToast }} border-0 mb-2" id="{{ idToast }}" role="alert" aria-live="polite"
+        aria-atomic="true" data-bs-autohide="false"style='display: None;'>
         <div class="d-flex">
-            <div class="toast-body">Subiendo...</div>
+            <div class="toast-body">{{ bodyToast }}</div>
+            {% if idToast != 'updateInfCost' %}
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+            {% endif %}
         </div>
     </div>
+    {% endif %}
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
