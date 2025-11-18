@@ -25,7 +25,7 @@
                 <td><img src="{% if u.profile.avatar.url %}{{ u.profile.avatar.url }}{% else %}avatars/user_0_unknown.jpg{% endif %}" class="rounded" alt="" width="50" height="50"></td>
                 <td>{{ u.username }}</td>
                 <td>{{ u.profile.rol }}</td>
-                <td>{{ user.date_joined }}</td>
+                <td>{{ u.date_joined }}</td>
                 <td class="text-center" style="vertical-align: middle;">
                     <div class="d-inline-flex gap-2">
                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#userModal"
@@ -52,16 +52,6 @@
 <div class="d-flex justify-content-center gap-2 my-2">
     <button id="prevBtn" class="btn btn-sm btn-outline-secondary">Anterior</button>
     <button id="nextBtn" class="btn btn-sm btn-outline-secondary">Siguiente</button>
-</div>
-
-<!-- Contenedor de los toasts -->
-<div class="position-fixed top-0 end-0 p-3" style="z-index: 1100;">
-    <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body"></div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
-        </div>
-    </div>
 </div>
 
 <!-- Modal de Bootstrap -->

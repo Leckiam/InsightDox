@@ -81,21 +81,12 @@ function abrirModalEditar(id, username,nombre,apellido, correo, rolId, avatar_ur
     }
 }
 
-function mostrarToastError(mensaje) {
-    const toastEl = document.getElementById('errorToast');
-    toastEl.querySelector('.toast-body').textContent = mensaje;
-
-    const toast = new bootstrap.Toast(toastEl, { delay: 4000 }); 
-    toast.show();
-}
-
 function validarPasswords(event) {
     const pass1 = document.getElementById('modalPassword1').value.trim();
     const pass2 = document.getElementById('modalPassword2').value.trim();
 
     if (pass1 !== pass2) {
         event.preventDefault();
-        mostrarToastError("Las contraseñas no coinciden");
         return false;
     }
     return true;

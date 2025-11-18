@@ -240,43 +240,26 @@ def generarRespuesta(request):
     resultado_formateado = formatear_resultado(resultado)
     
     fecha_actual = datetime.now()
-    mes = fecha_actual.month
-    anio = fecha_actual.year
     fecha_formateada = fecha_actual.strftime("%d-%m-%Y")
+    texto_param=''
+    if interpretacion.get('parametros', {}) :
+        texto_param = f'- Parámetros usados: {interpretacion.get('parametros', {}) }'
     # Crear prompt de redacción
     prompt_respuesta = f"""
     ## Eres un asistente contable que responde brevemente en español sobre movimientos económicos de Fenix Ing. y Servicios Ltda. y la fecha actual es '{fecha_formateada}'
 
     Instrucciones:
-    - Responde en un solo enunciado claro y natural.
-    - Menciona día, mes, año o tipo solo si aplica.
-    - Sé conciso (máx. 2 líneas).
-    - Totales y precios unitarios siempre en pesos chilenos ($X.XXX CLP), con separador de miles.
-    - Si en prediccion pide mas de 1 mes, entonces decir que solo se pude calcular hasta el proximo mes.
-    - Siempre trata de dar descripcion, categoria, cantidad, total y fecha en la respuesta al movimiento obtenido.
-    - Si 'Pregunta' no tiene ano ni mes, entonces mencionar 'hasta el mes {mes} del {anio}'.
-    - K: miles
-    - M: millones
-    - B: miles de millones
+    - Valor monetarios en pesos chilenos ($ CLP)
 
     Datos:
     - Pregunta: '{ pregunta }'
     - Resultado: { resultado_formateado }
-    - Parámetros usados: {interpretacion.get('parametros', {}) }
-
-    Ejemplos:
-    - 'En total hay 54 movimientos registrados en septiembre de 2025.'
-    - 'Gastos estimados para octubre 2025: $1K CLP a $10K CLP, promedio $5K CLP.'
-    - 'El proximo mes (Diciembre 2025) se espera un gasto estimado de alrededor de $5K CLP (rango entre $4K CLP y $6K CLP).'
-    - 'El ranking de categorías [Acendente por total] de los movimientos económicos hasta Diciembre del 2025 es: EPP ($1.00M CLP), GG ($1.11M CLP)'
-
-    Escribe solo la respuesta final.
     """
     
     # === Solicitud a phi3:mini (streaming) ===
     data = {
         "model": "phi3_contable",
-        "prompt": prompt_respuesta,
+        "prompt": prompt_respuesta + texto_param + 'Escribe solo la respuesta final.',
         "stream": True
     }
     print(data)

@@ -25,10 +25,8 @@ def login_view(request):
                 login(request, user)
                 return redirect("home")
             else:
-                msg={
-                    'error1': 'Correo o contraseña incorrectos.'
-                }
-                return render(request, urlBase+"login.html",context=msg)
+                messages.error(request, 'Correo o contraseña incorrectos.')
+                return render(request, urlBase+"login.html")
         return render(request, urlBase+"login.html")
     else:
         return redirect("home")
@@ -81,23 +79,14 @@ def recoverPass(request):
         # --- Enviar correo usando Gmail API ---
         oauth2.enviar_correo_gmail_api(email, subject, message)
 
-        msg = {
-            'success': True,
-            'message': f'Correo de recuperación enviado a {email}. Revisa tu bandeja de entrada.',
-            'reset_url': reset_url
-        }
+        messages.success(request, f'Correo de recuperación enviado a {email}. Revisa tu bandeja de entrada.')
         
     except User.DoesNotExist:
-        msg = {
-            'e_login': email,
-            'error': 'El correo ingresado no está registrado en el sistema. Por favor, verifica e intenta nuevamente.'
-        }
+        messages.error(request, f'El correo {email} no está registrado en el sistema. Por favor, verifica e intenta nuevamente.')
     except Exception as e:
-        msg = {
-            'error': f'Ocurrió un error al enviar el correo: {str(e)}'
-        }
+        messages.error(request, f'Ocurrió un error al enviar el correo: {str(e)}')
     
-    return render(request, urlBase + 'recoverPass.html', msg)
+    return render(request, urlBase + 'recoverPass.html')
 
 from django.contrib import messages
 from django.contrib.auth.tokens import default_token_generator
@@ -241,6 +230,7 @@ def addUser(request):
                 user_tmp = User.objects.get(username=username_tmp)
                 if not Profile.objects.filter(user=user_tmp).exists():
                     addProfile(user_tmp,avatar_tmp,rolID_tmp)
+                    messages.success(request, f'Perfil agregado al usuario existente {username_tmp}.')
             else:
                 if password1_tmp == password2_tmp:
                     user_tmp = User.objects.create_user(email=email_tmp,
@@ -249,10 +239,13 @@ def addUser(request):
                                                 first_name=nombre_tmp,
                                                 last_name=apellido_tmp)
                     addProfile(user_tmp,avatar_tmp,rolID_tmp)
+                    messages.success(request, f'Usuario {username_tmp} creado correctamente.')
                 else:
                     print('Contraseñas no coinciden')
-        except:
-            print('Fallo el agregar Usuario')
+                    messages.error(request, 'Las contraseñas no coinciden.')
+        except Exception as exc:
+            print('Fallo el agregar Usuario:', exc)
+            messages.error(request, 'Ocurrió un error al crear el usuario. Revise los datos e intente nuevamente.')
     next_url = request.GET.get('next', 'home')
     return redirect(next_url)
 
@@ -267,8 +260,10 @@ def deleteUser(request,id):
                     profile_tmp.delete()
                 user_tmp.delete()
                 print("Usuario eliminado correctamente")
+                messages.success(request, 'Usuario eliminado correctamente.')
         except Exception as e:
             print(f"No se pudo eliminar el usuario: {e}")
+            messages.error(request, 'No se pudo eliminar el usuario. Intente nuevamente.')
     next_url = request.GET.get('next', 'home')
     return redirect(next_url)
 
@@ -313,10 +308,13 @@ def editUser(request,id):
                 if update:
                     user_tmp.save()
                     print( "Usuario editado correctamente")
+                    messages.success(request, 'Usuario editado correctamente.')
                 else:
                     print('No se realizaron cambios al Usuario')
+                    messages.info(request, 'No se realizaron cambios al usuario.')
         except Exception as e:
             print(f"No se pudo editar el usuario: {e}")
+            messages.error(request, 'Ocurrió un error al editar el usuario. Revise los datos e intente nuevamente.')
     next_url = request.GET.get('next', 'home')
     return redirect(next_url)
 
@@ -336,40 +334,69 @@ def gestUsers(request):
 @login_required
 def addInformeCosto(request):
     if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
-        informe_excel = request.FILES['archivo_informe']
-        df = lecturaxlsx.procesar_informe(informe_excel)
-        mes,anno = lecturaxlsx.obtenerMesAnno(df)
-        
-        df_ventas = df[df['Categoria'] == 'EdP']
-        df_remuneracion = df[df['Categoria'] == 'MO']
-        df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
-        
-        informe, created = InformeCostos.objects.get_or_create(
-            usuario=request.user,
-            mes=mes,
-            anio=anno,
-            defaults={
-                'filas_detectadas': len(df),
-                'resumen_ventas': float(df_ventas['Total'].sum()),
-                'resumen_gastos': float(df_gastos['Total'].sum()),
-                'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
-            }
-        )
-        if informe.archivo_gcs:
-            informe.archivo_gcs.delete(save=False)
-        informe.archivo_gcs.save(
-            f"Informe_{anno}_{mes:02d}.xlsx",
-            informe_excel,
-            save=True
-        )
+        next_url = request.POST.get('next', 'registroInformes')
+        informe_excel = request.FILES.get('archivo_informe')
+        if not informe_excel:
+            messages.error(request, 'No se seleccionó ningún archivo para subir.')
+            return redirect(next_url)
 
-        # Solo cargar movimientos si se creó recién
-        if created:
-            lecturaxlsx.cargar_movimientos_desde_df(df, informe)
-        else:
-            print('El informe ya existe')
-        next_url = request.POST.get('next','home')
-        return redirect(next_url)
+        try:
+            df = lecturaxlsx.procesar_informe(informe_excel)
+            mes, anno = lecturaxlsx.obtenerMesAnno(df)
+
+            df_ventas = df[df['Categoria'] == 'EdP']
+            df_remuneracion = df[df['Categoria'] == 'MO']
+            df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
+
+            informe, created = InformeCostos.objects.get_or_create(
+                usuario=request.user,
+                mes=mes,
+                anio=anno,
+                defaults={
+                    'filas_detectadas': len(df),
+                    'resumen_ventas': float(df_ventas['Total'].sum()),
+                    'resumen_gastos': float(df_gastos['Total'].sum()),
+                    'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
+                }
+            )
+            if informe.archivo_gcs:
+                informe.archivo_gcs.delete(save=False)
+            informe.archivo_gcs.save(
+                f"Informe_{anno}_{mes:02d}.xlsx",
+                informe_excel,
+                save=True
+            )
+
+            # Solo cargar movimientos si se creó recién
+            if created:
+                lecturaxlsx.cargar_movimientos_desde_df(df, informe)
+            else:
+                print('El informe ya existe')
+
+            messages.success(request, 'Informe subido correctamente.')
+            return redirect(next_url)
+
+        except Exception as e:
+            # Capturar errores de procesamiento del archivo (formato inválido, fechas NaN, etc.)
+            err_msg = str(e)
+            # Determinar mensaje amigable para usuario final según patrón
+            user_msg = 'No se pudo procesar el archivo. Asegúrate de usar el formato de informe correcto (columnas: N°, Fecha, Descripción, Categoria, Tipo, Cantidad, Unidad, Precio unitario, Total) y que no existan celdas vacías en las columnas numéricas.'
+
+            # Mensajes más específicos según contenido del error
+            low = err_msg.lower()
+            if 'nan' in low or 'cannot convert' in low or 'could not convert' in low:
+                user_msg = 'El archivo contiene celdas numéricas vacías o valores no válidos. Revisa las columnas "N°", "Cantidad", "Precio unitario" y "Total" y vuelve a intentarlo.'
+            elif 'to_datetime' in low or 'dayfirst' in low or 'timestamp' in low:
+                user_msg = 'No se pudo extraer la fecha desde el archivo. Verifica que la columna "Fecha" tenga valores con formato válido.'
+            elif 'openpyxl' in low or 'zipfile' in low or 'file format' in low:
+                user_msg = 'El archivo no parece ser un .xlsx válido. Asegúrate de subir un archivo .xlsx (o .csv) con el formato correcto.'
+            elif 'empty' in low or 'emptydataerror' in low:
+                user_msg = 'El archivo está vacío o no contiene las filas esperadas a partir de la fila 12. Verifica el contenido del informe.'
+
+            # Log detallado para debugging y enviar mensaje amigable al usuario
+            print(f"Error al procesar informe: {err_msg}")
+            messages.error(request, user_msg)
+            return redirect(next_url)
     return redirect('home')
 
 @login_required
