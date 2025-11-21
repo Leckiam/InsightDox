@@ -39,6 +39,9 @@ fullstack/config/credentials/
 *.sqlite
 *.bak
 
+# Excepto crear BBDD de InsightDox
+!evidencias/bbdd/InsightDox.sql
+
 # Modelos
 *.pkl
 
