@@ -7,6 +7,79 @@ dime la cantidad de movimientos,cantidad_movimientos
 cuantos registros existen,cantidad_movimientos
 cuantas ventas hubo,cantidad_movimientos
 cuantos gastos hubo,cantidad_movimientos
+total de movimientos realizados,cantidad_movimientos
+cuantas operaciones se registraron,cantidad_movimientos
+movimientos contabilizados,cantidad_movimientos
+numero de transacciones,cantidad_movimientos
+
+# ====== MOVIMIENTO MÁS RECIENTE ======
+movimiento mas reciente,movimiento_mas_reciente
+cual fue el ultimo movimiento,movimiento_mas_reciente
+ultimo registro,movimiento_mas_reciente
+que se registro recientemente,movimiento_mas_reciente
+movimiento registrado mas reciente,movimiento_mas_reciente
+ultimo movimiento en el sistema,movimiento_mas_reciente
+el ultimo movimiento que se hizo,movimiento_mas_reciente
+registro mas reciente,movimiento_mas_reciente
+ultima transaccion,movimiento_mas_reciente
+ultimo movimiento contabilizado,movimiento_mas_reciente
+
+# ====== CANTIDAD EXTREMOS ======
+cantidad mas alta,cantidad_extremos
+cantidad mas baja,cantidad_extremos
+cual es la mayor cantidad,cantidad_extremos
+cual es la menor cantidad,cantidad_extremos
+cantidad maxima registrada,cantidad_extremos
+cantidad minima registrada,cantidad_extremos
+cuantos items hay de mayor cantidad,cantidad_extremos
+cuantos items hay de menor cantidad,cantidad_extremos
+cantidad extrema de movimientos,cantidad_extremos
+mayor y menor cantidad registrada,cantidad_extremos
+
+# ====== TOTAL EXTREMOS ======
+total mas alto,total_extremos
+total mas bajo,total_extremos
+cual es el total mas alto,total_extremos
+cual es el total mas bajo,total_extremos
+total maximo,total_extremos
+total minimo,total_extremos
+total mas grande,total_extremos
+total mas pequeño,total_extremos
+total extremo registrado,total_extremos
+mayor y menor total,total_extremos
+
+# ====== DISTRIBUCIÓN POR TIPO ======
+distribucion de tipos,distribucion_por_tipo
+porcentaje de ventas y gastos,distribucion_por_tipo
+proporcion de movimientos por tipo,distribucion_por_tipo
+como se distribuyen los tipos,distribucion_por_tipo
+division de movimientos por tipo,distribucion_por_tipo
+participacion por tipo,distribucion_por_tipo
+porcentaje de operaciones por tipo,distribucion_por_tipo
+cuanto representa cada tipo,distribucion_por_tipo
+ratio de ventas y gastos,distribucion_por_tipo
+proporcion de ingresos y egresos,distribucion_por_tipo
+
+# ====== ESTADÍSTICAS BÁSICAS ======
+cual es la moda,estadisticas_basicas_tipo
+moda movimientos,estadisticas_basicas_tipo
+moda ventas,estadisticas_basicas_tipo
+moda gastos,estadisticas_basicas_tipo
+promedio de movimientos,estadisticas_basicas_tipo
+promedio de ventas,estadisticas_basicas_tipo
+promedio de gastos,estadisticas_basicas_tipo
+mediana de movimientos,estadisticas_basicas_tipo
+mediana de ventas,estadisticas_basicas_tipo
+mediana de gastos,estadisticas_basicas_tipo
+resumen estadistico del tipo,estadisticas_basicas_tipo
+analisis basico del tipo,estadisticas_basicas_tipo
+
+# ====== CANTIDAD POR CATEGORÍA ======
+cuantos movimientos por categoria,cantidad_movimientos_por_categoria
+cantidad por categoria,cantidad_movimientos_por_categoria
+movimientos por categoria,cantidad_movimientos_por_categoria
+cuantas operaciones por categoria,cantidad_movimientos_por_categoria
+total de movimientos por categoria,cantidad_movimientos_por_categoria
 
 # ====== CATEGORÍAS POR TIPO ======
 listar categorias,categorias_por_tipo
@@ -16,76 +89,18 @@ cuales son las categorias disponibles,categorias_por_tipo
 dime todas las categorias,categorias_por_tipo
 categorias de ventas,categorias_por_tipo
 categorias de gastos,categorias_por_tipo
+categorias de ventas y gastos,categorias_por_tipo
 que categorias hay para ventas,categorias_por_tipo
 que categorias hay para gastos,categorias_por_tipo
-categorias asociadas al tipo,categorias_por_tipo
+
+# ====== RANKING DE CATEGORÍAS ======
 orden de categorias,ranking_categorias
 ranking de categorias,ranking_categorias
 categorias ordenadas por total,ranking_categorias
 categorias con mayor gasto,ranking_categorias
 categorias con mayor venta,ranking_categorias
-
-# ====== CANTIDAD POR CATEGORÍA ======
-cuantos movimientos por categoria,cantidad_movimientos_por_categoria
-cantidad por categoria,cantidad_movimientos_por_categoria
-movimientos por categoria,cantidad_movimientos_por_categoria
-cuantas operaciones por categoria,cantidad_movimientos_por_categoria
-
-# ====== MOVIMIENTO MÁS RECIENTE ======
-movimiento mas reciente,movimiento_mas_reciente
-cual fue el ultimo movimiento,movimiento_mas_reciente
-ultimo registro,movimiento_mas_reciente
-que se registro recientemente,movimiento_mas_reciente
-
-# ====== MOVIMIENTO MÁS ANTIGUO ======
-primer movimiento registrado,movimiento_mas_antiguo
-cual fue el primer movimiento,movimiento_mas_antiguo
-movimiento mas antiguo,movimiento_mas_antiguo
-registro mas viejo,movimiento_mas_antiguo
-
-# ====== EXTREMOS DE PRECIOS UNITARIOS ======
-precio unitario mas alto,precio_unitario_extremos
-precio unitario mas bajo,precio_unitario_extremos
-cual es el mayor precio unitario,precio_unitario_extremos
-cual es el menor precio unitario,precio_unitario_extremos
-
-# ====== EXTREMOS DE TOTAL ======
-total mas alto,total_extremos
-total mas bajo,total_extremos
-cual es el total mas alto,total_extremos
-cual es el total mas bajo,total_extremos
-
-# ====== EXTREMOS DE CANTIDAD ======
-cantidad mas alta,cantidad_extremos
-cantidad mas baja,cantidad_extremos
-cual es la mayor cantidad,cantidad_extremos
-cual es la menor cantidad,cantidad_extremos
-
-# ====== ESTADÍSTICAS BÁSICAS (PROMEDIO, MEDIANA, MODA, CANTIDAD) ======
-cual es la moda,estadisticas_basicas_tipo
-moda movimientos,estadisticas_basicas_tipo
-moda ventas,estadisticas_basicas_tipo
-moda gastos,estadisticas_basicas_tipo
-cual es la moda en 2024,estadisticas_basicas_tipo
-cual es la moda en 2024 de gastos,estadisticas_basicas_tipo
-que valor se repite mas,estadisticas_basicas_tipo
-
-cual es el promedio,estadisticas_basicas_tipo
-promedio de ventas,estadisticas_basicas_tipo
-promedio de gastos,estadisticas_basicas_tipo
-promedio en 2024,estadisticas_basicas_tipo
-
-cual es la mediana,estadisticas_basicas_tipo
-mediana de ventas,estadisticas_basicas_tipo
-mediana de gastos,estadisticas_basicas_tipo
-
-cantidad total del tipo,estadisticas_basicas_tipo
-cantidad de ventas,estadisticas_basicas_tipo
-cantidad de gastos,estadisticas_basicas_tipo
-
-estadisticas del tipo,estadisticas_basicas_tipo
-resumen estadistico del tipo,estadisticas_basicas_tipo
-analisis basico del tipo,estadisticas_basicas_tipo
+top categorias por ventas,ranking_categorias
+top categorias por gasto,ranking_categorias
 
 # ====== TOTAL POR TIPO ======
 total de ventas,total_por_tipo
@@ -93,41 +108,38 @@ total de gastos,total_por_tipo
 cuanto se vendio,total_por_tipo
 cuanto se gasto,total_por_tipo
 total del tipo,total_por_tipo
+ventas totales,total_por_tipo
+gastos totales,total_por_tipo
+suma de ventas,total_por_tipo
+suma de gastos,total_por_tipo
+total acumulado,total_por_tipo
 
 # ====== TOTAL POR CATEGORÍA ======
 total de categoria,total_por_categoria
 cuanto suma la categoria,total_por_categoria
 total gastado en categoria,total_por_categoria
 total vendido en categoria,total_por_categoria
-
-# ====== DISTRIBUCIÓN POR TIPO ======
-distribucion de tipos,distribucion_por_tipo
-porcentaje de ventas y gastos,distribucion_por_tipo
-proporcion de movimientos por tipo,distribucion_por_tipo
-
-# ====== ACUMULADO MENSUAL ======
-acumulado del año,acumulado_mensual
-acumulado mensual de ventas,acumulado_mensual
-acumulado mensual de gastos,acumulado_mensual
+total por categoria,total_por_categoria
 
 # ====== VARIACIÓN MENSUAL ======
 variacion mensual,variacion_mensual
 tendencia mensual,variacion_mensual
 como vario mes a mes,variacion_mensual
-
-# ====== MAYOR MOVIMIENTO POR CATEGORÍA ======
-mayor movimiento en categoria,mayor_movimiento_por_categoria
-cual fue el mayor total en esa categoria,mayor_movimiento_por_categoria
-
-# ====== CATEGORÍA MÁS FRECUENTE ======
-categoria mas repetida,categoria_mas_frecuente
-categoria mas usada,categoria_mas_frecuente
-que categoria aparece mas,categoria_mas_frecuente
+diferencia mensual,variacion_mensual
+cambios mes a mes,variacion_mensual
+variacion de movimientos por mes,variacion_mensual
+variacion de ventas y gastos,variacion_mensual
+cambio mensual de operaciones,variacion_mensual
+variacion de totales mes a mes,variacion_mensual
+cambios mensuales en los datos,variacion_mensual
 
 # ====== RESUMEN DEL PERIODO ======
 resumen del periodo,resumen_periodo
 resumen de movimientos,resumen_periodo
 resumen del año,resumen_periodo
+resumen mensual,resumen_periodo
+resumen anual,resumen_periodo
+resumen de operaciones,resumen_periodo
 
 # ====== PREDICCIÓN DE GASTOS ======
 predecir gastos futuros,predecir_gastos
@@ -137,3 +149,6 @@ como se veran mis gastos,predecir_gastos
 cuanto gastare,predecir_gastos
 prediccion de gastos,predecir_gastos
 prediccion del proximo mes,predecir_gastos
+estimacion de gastos,predecir_gastos
+prevision de gastos,predecir_gastos
+proyeccion mensual de gastos,predecir_gastos

@@ -38,9 +38,9 @@ def extraer_parametros(pregunta: str):
     if any(t in pregunta for t in ventas_kw):
         parametros["tipo"] = "VE"
     if any(t in pregunta for t in gastos_kw):
-        parametros["tipo"] = "RE"
-    if any(t in pregunta for t in remuneraciones_kw):
         parametros["tipo"] = "GA"
+    if any(t in pregunta for t in remuneraciones_kw):
+        parametros["tipo"] = "RE"
         
     # ---- Meses ----
     meses = {

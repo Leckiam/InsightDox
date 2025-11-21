@@ -109,10 +109,10 @@ def obtKpi_03():
     etiquetas_crecimiento = etiquetas[1:]
 
     desc = {
-        "explicacion": "Este gráfico muestra cuántas transacciones se realizaron cada mes y cómo fue su crecimiento porcentual. Las barras indican el número total de transacciones y la línea muestra si hubo aumento o disminución en comparación con el mes anterior.",
+        "explicacion": "Cuenta la cantidad de contratos u órdenes de servicio facturados cada mes y muestra cómo crece o decrece la actividad.",
         "interpretacion": [
-            "Si la línea sube → hay más actividad comercial.",
-            "Si baja → disminuye el flujo de transacciones."
+            "Si la línea sube → Aumento de clientes o servicios prestados",
+            "Si baja → Caída en la demanda."
             ]
     }
 
@@ -146,10 +146,10 @@ def obtKpi_04():
         valores_ticket.append(round(ticket, 2))  # opcional: redondear a 2 decimales
     
     desc = {
-        "explicacion": "Mide el monto promedio que los clientes gastan por transacción cada mes. Permite entender cuánto está dispuesto a pagar un cliente en cada compra.",
+        "explicacion": "Mide cuánto, en promedio, paga un cliente por cada contrato u orden de servicio.",
         "interpretacion": [
-            "Si sube → los clientes gastan más en cada compra.",
-            "Si baja → las ventas por cliente son más bajas."
+            "Si sube → Servicios más complejos o de mayor valor",
+            "Si baja → Servicios más pequeños o descuentos aplicados"
             ]
     }
     valores = [etiquetas, valores_ticket]
@@ -176,10 +176,10 @@ def obtKpi_05():
         valores.append(round(gasto_promedio,2))
 
     desc = {
-        "explicacion": "Indica cuánto se gasta en promedio por cada transacción. Ayuda a evaluar la eficiencia de los costos operacionales asociados a las ventas.",
+        "explicacion": "Indica cuánto cuesta, en promedio, prestar un servicio (considerando solo gastos, no remuneraciones).",
         "interpretacion": [
-            "Un valor bajo → proceso eficiente.",
-            "Un valor alto → los costos por venta están aumentando."
+            "Un valor bajo → Eficiente en costos operativos",
+            "Un valor alto → Costos directos elevados."
             ]
     }
     
@@ -206,10 +206,10 @@ def obtKpi_06():
         valores.append(round(porcentaje,2))
         
     desc = {
-        "explicacion": "Este indicador muestra qué porcentaje de las ventas totales se destina a gastos. Permite evaluar la eficiencia operativa de la empresa.",
+        "explicacion": "Muestra qué porcentaje de los ingresos se gasta en costos operativos (sin remuneraciones).",
         "interpretacion": [
-            "Bajo porcentaje → buena eficiencia.",
-            "Alto porcentaje → los gastos están consumiendo la rentabilidad."
+            "Bajo porcentaje → Buena eficiencia operativa.",
+            "Alto porcentaje → Gastos operativos consumen gran parte de los ingresos."
             ]
     }
     
@@ -235,10 +235,10 @@ def obtKpi_07():
         gastos_mensuales.append(float(total_gastos))
     
     desc = {
-        "explicacion": "Muestra cómo han variado los gastos totales mes a mes. Permite identificar tendencias de aumento o reducción en los costos de operación.",
+        "explicacion": "Muestra cómo cambian los gastos operativos totales mes a mes.",
         "interpretacion": [
-            "Si la línea sube constantemente → gastos creciendo.",
-            "Si baja → la empresa está controlando mejor sus costos."
+            "Si la línea sube constantemente → Aumento de costos.",
+            "Si baja → control o reducción de costos."
             ]
     }
     
@@ -284,10 +284,10 @@ def obtKpi_08():
         rentabilidad_mensual.append(round(rent_mes, 2))
 
     desc = {
-        "explicacion": "Indica el porcentaje de rentabilidad obtenido cada mes del año. Valores positivos indican ganancias y valores negativos indican pérdidas.",
+        "explicacion": "Calcula la rentabilidad considerando Ventas – (Gastos + Remuneraciones), expresada como porcentaje de las ventas.",
         "interpretacion": [
-            "Barras verdes → meses con rentabilidad positiva.",
-            "Barras rojas → meses con pérdida (rentabilidad negativa)."
+            "Barras verdes → Los ingresos cubren costos operativos y remuneraciones, negocio rentable.",
+            "Barras rojas → Los costos y sueldos superan los ingresos, alerta de pérdidas."
             ]
     }
     

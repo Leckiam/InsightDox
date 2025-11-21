@@ -138,11 +138,37 @@ class AnalizadorMovimientos:
         return {"movimiento_mas_antiguo": valor}
     
     def _preparar_dataset_gastos(self):
-        df = self.df[self.df['naturaleza'] == 'GA'][['fecha', 'total']]
+        # Filtramos solo gastos GA
+        df = self.df[self.df['naturaleza'] == 'GA'][['fecha', 'total']].copy()
         df = df.sort_values('fecha')
+
+        # Feature temporal
         df['t'] = (df['fecha'] - df['fecha'].min()).dt.days
+
+        # Features cíclicas de mes
+        df['mes'] = df['fecha'].dt.month
+        df['mes_sin'] = np.sin(2 * np.pi * df['mes'] / 12)
+        df['mes_cos'] = np.cos(2 * np.pi * df['mes'] / 12)
+
+        # Día de la semana
+        df['weekday'] = df['fecha'].dt.weekday
+        df['weekday_sin'] = np.sin(2 * np.pi * df['weekday'] / 7)
+        df['weekday_cos'] = np.cos(2 * np.pi * df['weekday'] / 7)
+
+        # Lag features
+        df['total_lag1'] = df['total'].shift(1).fillna(method='bfill')
+        df['total_lag3'] = df['total'].shift(3).fillna(method='bfill')
+        df['total_lag6'] = df['total'].shift(6).fillna(method='bfill')
+
+        # Promedio móvil
+        df['total_roll3'] = df['total'].rolling(window=3, min_periods=1).mean()
+        df['total_roll6'] = df['total'].rolling(window=6, min_periods=1).mean()
+
+        # Cambio relativo
+        df['cambio_mes'] = df['total'].pct_change().fillna(0)
+
         return df
-    
+
     def total_por_tipo(self, tipo, dia=None, mes=None, anio=None):
         df = self._filtrar_fecha(dia, mes, anio)
         df = df[df["naturaleza"] == tipo]
@@ -214,17 +240,24 @@ class AnalizadorMovimientos:
         from sklearn.model_selection import train_test_split
         from sklearn.ensemble import RandomForestRegressor
         from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-        X = df[['t']]
+        
+        # Features y target
+        features = ['t', 'mes_sin', 'mes_cos', 'weekday_sin', 'weekday_cos',
+                    'total_lag1', 'total_lag3', 'total_lag6', 'total_roll3', 'total_roll6', 'cambio_mes']
+        X = df[features]
         y = df['total']
-        
+
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        
+
         modelo = RandomForestRegressor(
-            n_estimators=100,
+            n_estimators=500,
+            max_depth=None,
+            min_samples_leaf=2,
+            max_features='sqrt',
             random_state=42
         )
-        modelo.fit(X, y)
-        
+        modelo.fit(X_train, y_train)
+
         # Predicciones en test
         y_pred = modelo.predict(X_test)
 
@@ -235,28 +268,60 @@ class AnalizadorMovimientos:
         r2 = r2_score(y_test, y_pred)
 
         print(f"MAE: {mae}, MSE: {mse}, RMSE: {rmse}, R2: {r2}")
-        
-        # Guardar el modelo localmente
+
+        # Guardar el modelo localmente 
         local_path = os.path.join(settings.BASE_DIR, "config", "modelo", "predecir_gastos.pkl")
-        joblib.dump(modelo, local_path)
+        joblib.dump(modelo, local_path) 
         if settings.DEBUG == False:
             # Subir el modelo a Google Cloud Storage
             subir_modelo(local_path, "predecir_gastos.pkl")
-        
-        return modelo
 
-    def _predecir_futuro(self, modelo, df, n):
+        return modelo, features
+
+    # ==================== Predecir futuro ====================
+    def _predecir_futuro(self, modelo, df, features, n):
         ult_fecha = df["fecha"].max()
         ult_t = df["t"].max()
-
         pred = []
+
+        # Tomamos últimas filas para lags y rolling
+        df_tail = df.tail(6).copy()
+
         for i in range(1, n + 1):
+            futuro_fecha = ult_fecha + pd.DateOffset(months=i)
             futuro_t = ult_t + 30 * i
-            fecha = ult_fecha + pd.DateOffset(months=i)
-            valor = modelo.predict([[futuro_t]])[0]
+            mes = futuro_fecha.month
+            weekday = futuro_fecha.weekday()
+
+            # Lags y rolling
+            lag1 = df_tail['total'].iloc[-1]
+            lag3 = df_tail['total'].iloc[-3] if len(df_tail) >= 3 else lag1
+            lag6 = df_tail['total'].iloc[-6] if len(df_tail) >= 6 else lag1
+            roll3 = df_tail['total'].tail(3).mean()
+            roll6 = df_tail['total'].tail(6).mean()
+            cambio_mes = (lag1 - df_tail['total'].iloc[-2]) / df_tail['total'].iloc[-2] if len(df_tail) >= 2 else 0
+
+            X_fut = pd.DataFrame([{
+                't': futuro_t,
+                'mes_sin': np.sin(2 * np.pi * mes / 12),
+                'mes_cos': np.cos(2 * np.pi * mes / 12),
+                'weekday_sin': np.sin(2 * np.pi * weekday / 7),
+                'weekday_cos': np.cos(2 * np.pi * weekday / 7),
+                'total_lag1': lag1,
+                'total_lag3': lag3,
+                'total_lag6': lag6,
+                'total_roll3': roll3,
+                'total_roll6': roll6,
+                'cambio_mes': cambio_mes
+            }])
+
+            valor = modelo.predict(X_fut)[0]
+
+            # Actualizar df_tail para próximos pasos
+            df_tail = pd.concat([df_tail, pd.DataFrame({'total':[valor]})], ignore_index=True)
 
             pred.append({
-                "mes": fecha.strftime("%B %Y"),
+                "mes": futuro_fecha.strftime("%B %Y"),
                 "total": round(valor),
                 "min": round(valor * 0.85),
                 "max": round(valor * 1.15),
@@ -264,7 +329,8 @@ class AnalizadorMovimientos:
 
         return pred
 
-    def predecir_gastos(self, tipo=None,categoria=None,cant_meses_futuros=1):
+    # ==================== Función principal ====================
+    def predecir_gastos(self, cant_meses_futuros=1):
         df = self._preparar_dataset_gastos()
-        modelo = self._entrenar_modelo_gastos(df)
-        return self._predecir_futuro(modelo, df, cant_meses_futuros)
+        modelo, features = self._entrenar_modelo_gastos(df)
+        return self._predecir_futuro(modelo, df, features, cant_meses_futuros)
