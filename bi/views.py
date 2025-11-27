@@ -80,12 +80,12 @@ def recoverPass(request):
         oauth2.enviar_correo_gmail_api(email, subject, message)
 
         messages.success(request, f'Correo de recuperación enviado a {email}. Revisa tu bandeja de entrada.')
-    
+        
     except User.DoesNotExist:
         messages.error(request, f'El correo {email} no está registrado en el sistema. Por favor, verifica e intenta nuevamente.')
     except Exception as e:
         messages.error(request, f'Ocurrió un error al enviar el correo: {str(e)}')
-
+    
     return render(request, urlBase + 'recoverPass.html')
 
 from django.contrib import messages
@@ -168,7 +168,10 @@ def home(request):
             print("Ocurrió un error:", e)
             context={
                 "ultimo_Informe": InformeCostos(),
-                "balance": 0
+                "balance": 0,
+                "classToast":"secondary",
+                "idToast":"updateFiles",
+                "bodyToast":"Subiendo..."
             }
         return render(request,urlBase+'index.html',context=context)
     else:
@@ -231,8 +234,6 @@ def addUser(request):
                 if not Profile.objects.filter(user=user_tmp).exists():
                     addProfile(user_tmp,avatar_tmp,rolID_tmp)
                     messages.success(request, f'Perfil agregado al usuario existente {username_tmp}.')
-                else:
-                    messages.info(request, f'El usuario {username_tmp} ya existe con perfil.')
             else:
                 if password1_tmp == password2_tmp:
                     user_tmp = User.objects.create_user(email=email_tmp,
@@ -243,6 +244,7 @@ def addUser(request):
                     addProfile(user_tmp,avatar_tmp,rolID_tmp)
                     messages.success(request, f'Usuario {username_tmp} creado correctamente.')
                 else:
+                    print('Contraseñas no coinciden')
                     messages.error(request, 'Las contraseñas no coinciden.')
         except Exception as exc:
             print('Fallo el agregar Usuario:', exc)
@@ -260,6 +262,7 @@ def deleteUser(request,id):
                 if profile_tmp:
                     profile_tmp.delete()
                 user_tmp.delete()
+                print("Usuario eliminado correctamente")
                 messages.success(request, 'Usuario eliminado correctamente.')
         except Exception as e:
             print(f"No se pudo eliminar el usuario: {e}")
@@ -307,8 +310,10 @@ def editUser(request,id):
                         update = False
                 if update:
                     user_tmp.save()
+                    print( "Usuario editado correctamente")
                     messages.success(request, 'Usuario editado correctamente.')
                 else:
+                    print('No se realizaron cambios al Usuario')
                     messages.info(request, 'No se realizaron cambios al usuario.')
         except Exception as e:
             print(f"No se pudo editar el usuario: {e}")
@@ -323,7 +328,10 @@ def gestUsers(request):
         allRoles = Roles.objects.all()
         context={
             "all_Usuarios":allUsers,
-            "all_roles":allRoles
+            "all_roles":allRoles,
+            "classToast":"danger",
+            "idToast":"errorPass",
+            "bodyToast":"Su contraseña no coincide"
             }
         return render(request, urlBase+"gestion/gestionUsers.html",context)
     else:
@@ -333,45 +341,46 @@ def gestUsers(request):
 def addInformeCosto(request):
     if request.method == "POST" and request.user.profile.rol.codigo == "ADM":
         next_url = request.POST.get('next', 'registroInformes')
-        informe_excel = request.FILES.get('archivo_informe')
-        if not informe_excel:
+        informes_excel = request.FILES.getlist('archivo_informe')
+        print(informes_excel)
+        if not informes_excel:
             messages.error(request, 'No se seleccionó ningún archivo para subir.')
             return redirect(next_url)
 
         try:
-            df = lecturaxlsx.procesar_informe(informe_excel)
-            mes, anno = lecturaxlsx.obtenerMesAnno(df)
+            for informe_excel in informes_excel:
+                df = lecturaxlsx.procesar_informe(informe_excel)
+                mes, anno = lecturaxlsx.obtenerMesAnno(df)
 
-            df_ventas = df[df['Categoria'] == 'EdP']
-            df_remuneracion = df[df['Categoria'] == 'MO']
-            df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
+                df_ventas = df[df['Categoria'] == 'EdP']
+                df_remuneracion = df[df['Categoria'] == 'MO']
+                df_gastos = df[~df['Categoria'].isin(['EdP', 'MO'])]
 
-            informe, created = InformeCostos.objects.get_or_create(
-                usuario=request.user,
-                mes=mes,
-                anio=anno,
-                defaults={
-                    'filas_detectadas': len(df),
-                    'resumen_ventas': float(df_ventas['Total'].sum()),
-                    'resumen_gastos': float(df_gastos['Total'].sum()),
-                    'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
-                }
-            )
-            if informe.archivo_gcs:
-                informe.archivo_gcs.delete(save=False)
-            informe.archivo_gcs.save(
-                f"Informe_{anno}_{mes:02d}.xlsx",
-                informe_excel,
-                save=True
-            )
+                informe, created = InformeCostos.objects.get_or_create(
+                    usuario=request.user,
+                    mes=mes,
+                    anio=anno,
+                    defaults={
+                        'filas_detectadas': len(df),
+                        'resumen_ventas': float(df_ventas['Total'].sum()),
+                        'resumen_gastos': float(df_gastos['Total'].sum()),
+                        'resumen_remuneraciones': float(df_remuneracion['Total'].sum())
+                    }
+                )
+                if informe.archivo_gcs:
+                    informe.archivo_gcs.delete(save=False)
+                informe.archivo_gcs.save(
+                    f"Informe_{anno}_{mes:02d}.xlsx",
+                    informe_excel,
+                    save=True
+                )
+                # Solo cargar movimientos si se creó recién
+                if created:
+                    lecturaxlsx.cargar_movimientos_desde_df(df, informe)
+                    messages.success(request, 'Informe subido correctamente.')
+                else:
+                    messages.warning(request, 'El informe para {}/{} ya existe.'.format(mes, anno))
 
-            # Solo cargar movimientos si se creó recién
-            if created:
-                lecturaxlsx.cargar_movimientos_desde_df(df, informe)
-            else:
-                print('El informe ya existe')
-
-            messages.success(request, 'Informe subido correctamente.')
             return redirect(next_url)
 
         except Exception as e:
@@ -395,7 +404,6 @@ def addInformeCosto(request):
             print(f"Error al procesar informe: {err_msg}")
             messages.error(request, user_msg)
             return redirect(next_url)
-
     return redirect('home')
 
 @login_required
@@ -404,6 +412,7 @@ def eliminar_informe(request, id):
         informe = get_object_or_404(InformeCostos, id=id)
         informe.delete()
     next_url = request.POST.get('next', 'home')
+    messages.success(request, 'Se elimino correctamente el Informe')
     return redirect(next_url)
 
 from django.core.paginator import Paginator
@@ -436,7 +445,10 @@ def gestInformes(request):
     context = {
         "all_Informes": page_obj,
         "selected_anno": anno,
-        "annos": annos
+        "annos": annos,
+        "classToast":"classToast",
+        "idToast":"updateFiles",
+        "bodyToast":"Subiendo..."
     }
     return render(request, urlBase + "gestion/registroInformes.html", context)
 
@@ -448,7 +460,9 @@ def editObservacion(request,id):
         try:
             informe_tmp.observaciones = observacion
             informe_tmp.save()
+            messages.success(request, f'Se edito correctamente el Informe {informe_tmp}')
         except Exception as e:
+            messages.error(request, 'No se pudo actualizar la observación')
             print(f"No se pudo actualizar la observación: {e}")
     return redirect('gestInformes')
 
