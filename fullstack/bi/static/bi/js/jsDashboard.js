@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
+    f_kpi_01();
+    f_kpi_02();
     f_kpi_03();
     f_kpi_04();
     f_kpi_05();
@@ -6,6 +8,61 @@ document.addEventListener("DOMContentLoaded", function () {
     f_kpi_07();
     f_kpi_08();
 })
+
+function f_kpi_01(){
+    const kpi_01 = JSON.parse(document.getElementById('kpi_01').textContent);
+
+    const ctx1 = document.getElementById('ventasGastosChart').getContext('2d');
+    new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: kpi_01[0],
+            datasets: [
+                {
+                    label: 'Ventas',
+                    data: kpi_01[1],
+                    backgroundColor: '#4a90e2'
+                },
+                {
+                    label: 'Gastos',
+                    data: kpi_01[2],
+                    backgroundColor: '#e94e4e'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                title: { display: true, text: 'Ventas vs Gastos + Remuneración Mensual' }
+            }
+        }
+    });
+}
+function f_kpi_02(){
+    // Gráfico 2: Gastos por Categoría (Ejemplo de referencia)
+    const kpi_02 = JSON.parse(document.getElementById('kpi_02').textContent);
+    const ctx2 = document.getElementById('gastosCategoriaChart').getContext('2d');
+
+    new Chart(ctx2, {
+        type: 'pie',
+        data: {
+            labels: kpi_02[0],
+            datasets: [{
+                label: 'Gastos por Categoría',
+                data: kpi_02[1],
+                backgroundColor: ['#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'right' },
+                title: { display: true, text: 'Gastos por Categoría del Mes Reciente' }
+            }
+        }
+    });
+}
 
 function f_kpi_03() {
     //Número de transacciones y crecimiento mensual
@@ -18,7 +75,7 @@ function f_kpi_03() {
 
     const etiquetasCrec = datosCrecimiento[0];
     const valoresCrec = datosCrecimiento[1];
-    const ctx1 = document.getElementById('ventasGastosChart').getContext('2d');
+    const ctx1 = document.getElementById('transaccionesChart').getContext('2d');
     new Chart(ctx1, {
         type: 'bar', // base: barras
         data: {

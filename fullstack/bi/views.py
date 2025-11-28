@@ -378,10 +378,11 @@ def addInformeCosto(request):
                 # Solo cargar movimientos si se creó recién
                 if created:
                     lecturaxlsx.cargar_movimientos_desde_df(df, informe)
+                    messages.success(request, 'Informe subido correctamente.')
                 else:
                     print('El informe ya existe')
+                    messages.warning(request, 'El informe para {}/{} ya existe.'.format(mes, anno))
 
-            messages.success(request, 'Informe subido correctamente.')
             return redirect(next_url)
 
         except Exception as e:
@@ -528,16 +529,53 @@ def gestMovEco(request):
     }
     return render(request, urlBase+"gestion/registroMovEco.html", context)
 
+def sumar_meses(anio, mes, meses_a_sumar):
+    mes_total = mes + meses_a_sumar
+    nuevo_anio = anio + (mes_total - 1) // 12
+    nuevo_mes = ((mes_total - 1) % 12) + 1
+    return nuevo_anio, nuevo_mes
+
 @login_required
 def dashboard(request):
+    periodo = request.GET.get('periodo')
+
+    firstInform = InformeCostos.objects.all().order_by('anio','mes').first()
+    lastInform = InformeCostos.objects.all().order_by('-anio','-mes').first()
+    anio_min = firstInform.anio + 1
+    mes_min = firstInform.mes
+    
+    anio_last = lastInform.anio
+    mes_last = lastInform.mes
+    anio_max, mes_max = sumar_meses(anio_last, mes_last, 3)
+    
+    if periodo:
+        anno, mes = periodo.split('-')
+        anno = int(anno)
+        mes = int(mes)
+        if not (anio_min <= anno <= anio_max):
+            anno, mes = None, None
+        elif anno == anio_min and mes < mes_min:
+            anno, mes = None, None
+        elif anno == anio_max and mes > mes_max:
+            anno, mes = None, None
+    else:
+        anno = None
+        mes = None
     context={
+        "today": date.today(),
         "data":{
-            "kpi_03":obtenerKpis.obtKpi_03(),
-            "kpi_04":obtenerKpis.obtKpi_04(),
-            "kpi_05":obtenerKpis.obtKpi_05(),
-            "kpi_06":obtenerKpis.obtKpi_06(),
-            "kpi_07":obtenerKpis.obtKpi_07(),
-            "kpi_08":obtenerKpis.obtKpi_08()
+            "kpi_01":obtenerKpis.obtKpi_01(anno,mes),
+            "kpi_02":obtenerKpis.obtKpi_02(anno,mes),
+            "kpi_03":obtenerKpis.obtKpi_03(anno,mes),
+            "kpi_04":obtenerKpis.obtKpi_04(anno,mes),
+            "kpi_05":obtenerKpis.obtKpi_05(anno,mes),
+            "kpi_06":obtenerKpis.obtKpi_06(anno,mes),
+            "kpi_07":obtenerKpis.obtKpi_07(anno,mes),
+            "kpi_08":obtenerKpis.obtKpi_08(anno,mes)
+        },
+        "filtro":{
+            "min":f'{anio_min}-{mes_min:02d}',
+            "max":f'{anio_max}-{mes_max:02d}'
         }
     }
     return render(request, urlBase+"dashboard.html", context)

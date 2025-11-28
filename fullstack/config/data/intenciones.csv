@@ -141,14 +141,49 @@ resumen mensual,resumen_periodo
 resumen anual,resumen_periodo
 resumen de operaciones,resumen_periodo
 
-# ====== PREDICCIÓN DE GASTOS ======
-predecir gastos futuros,predecir_gastos
-predice mis gastos,predecir_gastos
-proyeccion de gastos futuros,predecir_gastos
-como se veran mis gastos,predecir_gastos
-cuanto gastare,predecir_gastos
-prediccion de gastos,predecir_gastos
-prediccion del proximo mes,predecir_gastos
-estimacion de gastos,predecir_gastos
-prevision de gastos,predecir_gastos
-proyeccion mensual de gastos,predecir_gastos
+# ====== PREDICCIÓN ======
+predecir gastos futuros,predecir
+predice mis gastos,predecir
+proyeccion de gastos futuros,predecir
+como se veran mis gastos,predecir
+cuanto gastare,predecir
+prediccion de gastos,predecir
+prediccion del proximo mes,predecir
+estimacion de gastos,predecir
+prevision de gastos,predecir
+proyeccion mensual de gastos,predecir
+gasto proyectado,predecir
+estimación futura de egresos,predecir
+cómo crecerán mis gastos,predecir
+cuánto podría gastar el próximo mes,predecir
+tendencia de gastos hacia adelante,predecir
+anticipación del gasto mensual,predecir
+predecir ventas futuros,predecir
+predice mis ventas,predecir
+proyeccion de ventas futuros,predecir
+como se veran mis ventas,predecir
+cuanto vendere,predecir
+prediccion de ventas,predecir
+prediccion del proximo mes,predecir
+estimacion de ventas,predecir
+prevision de ventas,predecir
+proyeccion mensual de ventas,predecir
+ventas proyectadas,predecir
+cuánto ingresará el próximo mes,predecir
+estimación futura de ingresos,predecir
+tendencia de ventas futuras,predecir
+venta esperada,predecir
+predecir remuneraciones futuros,predecir
+predice mis remuneraciones,predecir
+proyeccion de remuneraciones futuros,predecir
+como se veran mis remuneraciones,predecir
+cuanto remunerare,predecir
+prediccion de remuneraciones,predecir
+prediccion del proximo mes,predecir
+estimacion de remuneraciones,predecir
+prevision de remuneraciones,predecir
+proyeccion mensual de remuneraciones,predecir
+pago estimado futuro,predecir
+remuneración proyectada,predecir
+anticipación del sueldo,predecir
+próxima remuneración esperada,predecir

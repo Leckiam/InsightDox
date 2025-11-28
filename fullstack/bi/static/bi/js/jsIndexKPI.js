@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
             responsive: true,
             plugins: {
                 legend: { position: 'right' },
-                title: { display: true, text: 'Gastos por Categoría del Mes Actual' }
+                title: { display: true, text: 'Gastos por Categoría del Mes Reciente' }
             }
         }
     });

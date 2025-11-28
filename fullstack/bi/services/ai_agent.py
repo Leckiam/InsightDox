@@ -110,9 +110,9 @@ def entrenaModelo():
 
     modelo = Pipeline([
         ("vectorizer", TfidfVectorizer()),
-        ("classifier", LogisticRegression(max_iter=200))
+        ("classifier", LogisticRegression(max_iter=500, class_weight='balanced'))  # balancea clases
     ])
-    
+
     # Entrenar
     modelo.fit(X_train, y_train)
 
@@ -249,7 +249,7 @@ def generarRespuesta(request):
     ## Eres un asistente contable que responde brevemente en español sobre movimientos económicos de Fenix Ing. y Servicios Ltda. y la fecha actual es '{fecha_formateada}'
 
     Instrucciones:
-    - Valor monetarios (precio_unitario y total) en pesos chilenos ($ CLP)
+    - Si en Resultado tengo total o precio_unitario, entonces estos son valores monetarios (pesos chilenos [$ CLP])
     - Numeros deben estar en formato X.XXX y decir valor exacto.
 
     Datos:

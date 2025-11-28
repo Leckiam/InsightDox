@@ -5,7 +5,6 @@
 {% block titulo %} Registro Mov. Economico {% endblock %}
 
 {% block statics %}
-<link rel="stylesheet" href="{% static_version 'bi/css/styleMovimiento.css' %}">
 {% endblock %}
 
 {% block classBody %}
@@ -102,6 +101,10 @@ class="main-content"
     <!-- Paginación -->
     <div class="d-flex justify-content-center mt-4">
         {% if all_Movimientos.has_previous %}
+        <a href="?page=1&tipo={{ selected_tipo }}&mes={{ selected_mes }}&anno={{ selected_anno }}&per_page={{ per_page }}"
+            class="btn btn-outline-secondary btn-sm me-2">
+            Primera Pagina
+        </a>
         <a href="?page={{ all_Movimientos.previous_page_number }}&tipo={{ selected_tipo }}&mes={{ selected_mes }}&anno={{ selected_anno }}&per_page={{ per_page }}"
             class="btn btn-outline-secondary btn-sm me-2">
             Anterior
@@ -116,6 +119,10 @@ class="main-content"
         <a href="?page={{ all_Movimientos.next_page_number }}&tipo={{ selected_tipo }}&mes={{ selected_mes }}&anno={{ selected_anno }}&per_page={{ per_page }}"
             class="btn btn-outline-secondary btn-sm ms-2">
             Siguiente
+        </a>
+        <a href="?page={{ all_Movimientos.paginator.num_pages }}&tipo={{ selected_tipo }}&mes={{ selected_mes }}&anno={{ selected_anno }}&per_page={{ per_page }}"
+            class="btn btn-outline-secondary btn-sm ms-2">
+            Última Pagina
         </a>
         {% endif %}
     </div>

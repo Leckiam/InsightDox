@@ -14,7 +14,7 @@ current_dir = os.getcwd()
 output_dir = os.path.join(current_dir, "DtSimulations")
 os.makedirs(output_dir, exist_ok=True)
 
-plantilla_excel = os.path.join(current_dir, "DtSimulations/Formato_InformeDeCostos.xlsx")  # tu archivo con formato
+plantilla_excel = os.path.join(current_dir, "DtSimulations", "Formato_InformeDeCostos.xlsx")
 
 clientes_edp = {
     "Codelco Ventanas": 140000000,

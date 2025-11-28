@@ -19,35 +19,61 @@ class="main-content"
 <main class="container py-4">
     <h1>Dashboard Financiero (Gráficos)</h1>
     <!-- Gráficas -->
-    
+    <div class="card border-0 p-3">
+        <div class="card-body">
+            <form method="GET" class="d-flex align-items-end gap-3">
+
+                <!-- Input -->
+                <div>
+                    <label for="periodo" class="form-label fw-bold m-0">Periodo</label>
+                    <input type="month" id="periodo" name="periodo"
+                        class="form-control" min="{{filtro.min}}" max="{{filtro.max}}"
+                        value="{% if request.GET.periodo %}{{ request.GET.periodo }}{% else %}{{ today|date:'Y-m' }}{% endif %}">
+                </div>
+
+                <!-- Botón Filtrar -->
+                <div>
+                    <button type="submit" class="btn btn-filtrar-custom">Filtrar</button>
+                </div>
+
+                <!-- Botón Limpiar -->
+                <div>
+                    <a href="?" class="btn btn-light border">Limpiar</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
     <div class="row g-4 mb-4">
         {% for key, item in data.items %}
-            {% with valores=item.0 kpi_id=item.1 canva_id=item.2 descripcion=item.3 %}
-            <div class="col-lg-6">
-                {{ valores|json_script:kpi_id }}
-                <div class="card shadow-sm h-100">
-                    <div class="card-body d-flex align-items-center justify-content-center text-muted" style="position: relative;">
-                        <div class="tooltip-container" style="overflow: visible;">
-                            <span class="tooltip-icon">ⓘ</span>
-                            <div class="tooltip-box">
-                                <strong>Explicación:</strong> {{ descripcion.explicacion }} <br>
-                                <strong>Interpretación:</strong>
-                                <ul style="padding-left: 18px; margin: 0;">
+        {% with valores=item.0 kpi_id=item.1 canva_id=item.2 descripcion=item.3 %}
+        <div class="col-lg-6">
+            {{ valores|json_script:kpi_id }}
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-center text-muted"
+                    style="position: relative;">
+                    <div class="tooltip-container" style="overflow: visible;">
+                        <span class="tooltip-icon">ⓘ</span>
+                        <div class="tooltip-box">
+                            <strong>Explicación:</strong> {{ descripcion.explicacion }} <br>
+                            <strong>Interpretación:</strong>
+                            <ul style="padding-left: 18px; margin: 0;">
                                 {% for interpretacion in descripcion.interpretacion %}
-                                    <li>{{ interpretacion }}</li>
+                                <li>{{ interpretacion }}</li>
                                 {% endfor %}
-                                </ul>
-                            </div>
+                            </ul>
                         </div>
-                        {% if valores %}
-                        <canvas id="{{ canva_id }}" style="height: 260px;"></canvas>
-                        {% else %}
-                        <strong> No existen datos </strong>
-                        {% endif %}
                     </div>
+                    {% if valores %}
+                    <canvas id="{{ canva_id }}" style="height: 260px;"></canvas>
+                    {% else %}
+                    <strong> No existen datos </strong>
+                    {% endif %}
                 </div>
             </div>
-            {% endwith %}
+        </div>
+        {% endwith %}
         {% endfor %}
     </div>
 </main>

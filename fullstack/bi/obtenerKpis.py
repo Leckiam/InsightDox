@@ -13,22 +13,23 @@ def obtDF():
     df.rename(columns={'informe__observaciones': 'observacion'}, inplace=True)
     return df
 
-def obtn_meses_rango(hoy=True):
-    if hoy == True:
-        hoy = date.today()
+def obtn_meses_rango(anio_param=None, mes_param=None):
+    # Si el usuario entrega parámetros válidos → se usan
+    if anio_param is not None and mes_param is not None:
+        hoy = date(anio_param, mes_param, 1)
     else:
-        lastMovEco = MovimientoEconomico.objects.all().order_by('-id').first()
-        hoy = lastMovEco.fecha
-    
-    # Generar los últimos 12 meses desde el último registro
+        # Si NO entrega parámetros → usar fecha actual
+        hoy = date.today()
+
     meses_rango = []
     for i in range(12):
-        fecha = hoy - relativedelta(months=11-i)  # 11-i para que quede en orden cronológico
+        fecha = hoy - relativedelta(months=11 - i)
         meses_rango.append((fecha.year, fecha.month))
+
     return meses_rango
 
-def obtKpi_01():
-    meses_rango = obtn_meses_rango()
+def obtKpi_01(anio_param=None, mes_param=None):
+    meses_rango = obtn_meses_rango(anio_param, mes_param)
 
     ventas_mensuales = []
     gastos_mensuales = []
@@ -54,14 +55,31 @@ def obtKpi_01():
     if not datos_presentes:  # si todos los meses son cero / no hay registros
         return None
 
-    return [etiquetas, ventas_mensuales, gastos_mensuales]
+    desc = {
+        "explicacion": "Muestra las ventas comparadas con los gastos y remuneraciones durante los últimos 12 meses.",
+        "interpretacion": [
+            "Ventas arriba de gastos + remuneraciones → Negocio rentable",
+            "Ventas cerca o debajo de gastos + remuneraciones → Reducción de margen o posibles pérdidas",
+            "Picos o valles → Identifica meses de alto o bajo desempeño"
+        ]
+    }
+    valores = [etiquetas, ventas_mensuales, gastos_mensuales]
+    kpi_id = "kpi_01"
+    canva_id = "ventasGastosChart"
+    descripcion = desc
+    return [valores,kpi_id,canva_id,descripcion]
 
-def obtKpi_02():
-    ultimo_informe = InformeCostos.objects.order_by('-anio','-mes').first()
-    
+def obtKpi_02(anio_param=None, mes_param=None):
+    if anio_param==None and mes_param==None:
+        ultimo_informe = InformeCostos.objects.order_by('-anio','-mes').first()
+        anio = ultimo_informe.anio
+        mes = ultimo_informe.mes
+    else:
+        anio = anio_param
+        mes = mes_param
     gastos = (
         MovimientoEconomico.objects
-        .filter(naturaleza='GA', fecha__year=ultimo_informe.anio, fecha__month=ultimo_informe.mes)
+        .filter(naturaleza='GA', fecha__year=anio, fecha__month=mes)
         .values('categoria')
         .annotate(total=Sum('total'))
         .order_by('categoria')
@@ -72,11 +90,23 @@ def obtKpi_02():
     etiquetas = [g['categoria'] for g in gastos]
     valores = [float(g['total'] or 0) for g in gastos]
 
-    return [etiquetas, valores]
+    desc = {
+        "explicacion": "Muestra la distribución de los gastos por categoría en el mes más reciente.",
+        "interpretacion": [
+            "Cada porción representa el peso relativo de cada categoría en los gastos totales del mes",
+            "Porciones grandes → Categoría con mayor gasto",
+            "Permite identificar rápidamente dónde se concentra el gasto mensual"
+        ]
+    }
+    valores = [etiquetas, valores]
+    kpi_id = "kpi_02"
+    canva_id = "gastosCategoriaChart"
+    descripcion = desc
+    return [valores,kpi_id,canva_id,descripcion]
 
-def obtKpi_03():
+def obtKpi_03(anio_param=None, mes_param=None):
     #Número de transacciones y crecimiento mensual
-    meses_rango = obtn_meses_rango()
+    meses_rango = obtn_meses_rango(anio_param, mes_param)
 
     num_transacciones_mensual = []
     ventas_totales_mensual = []
@@ -118,13 +148,13 @@ def obtKpi_03():
 
     valores = [[etiquetas, num_transacciones_mensual],[etiquetas_crecimiento, crecimiento_mensual]]
     kpi_id = "kpi_03"
-    canva_id = "ventasGastosChart"
+    canva_id = "transaccionesChart"
     descripcion = desc
     return [valores,kpi_id,canva_id,descripcion]
 
-def obtKpi_04():
+def obtKpi_04(anio_param=None, mes_param=None):
     #Ticket Promedio Mensual
-    meses_rango = obtn_meses_rango()
+    meses_rango = obtn_meses_rango(anio_param, mes_param)
     
     etiquetas = []
     valores_ticket = []
@@ -158,9 +188,9 @@ def obtKpi_04():
     descripcion = desc
     return [valores,kpi_id,canva_id,descripcion]
 
-def obtKpi_05():
+def obtKpi_05(anio_param=None, mes_param=None):
     #Gasto promedio por transacción
-    meses_rango = obtn_meses_rango()
+    meses_rango = obtn_meses_rango(anio_param, mes_param)
     
     etiquetas = []
     valores = []
@@ -189,9 +219,9 @@ def obtKpi_05():
     descripcion = desc
     return [valores,kpi_id,canva_id,descripcion]
 
-def obtKpi_06():
+def obtKpi_06(anio_param=None, mes_param=None):
     #Gráfico de eficiencia de gastos
-    meses_rango = obtn_meses_rango()
+    meses_rango = obtn_meses_rango(anio_param, mes_param)
     
     etiquetas = []
     valores = []
@@ -219,9 +249,9 @@ def obtKpi_06():
     descripcion = desc
     return [valores,kpi_id,canva_id,descripcion]
 
-def obtKpi_07():
+def obtKpi_07(anio_param=None, mes_param=None):
     #evolucion_y_eficiencia_gastos
-    meses_rango = obtn_meses_rango()
+    meses_rango = obtn_meses_rango(anio_param, mes_param)
     
     etiquetas = []
     gastos_mensuales = []
@@ -248,8 +278,8 @@ def obtKpi_07():
     descripcion = desc
     return [valores,kpi_id,canva_id,descripcion]
     
-def obtKpi_08():
-    meses_rango = obtn_meses_rango()
+def obtKpi_08(anio_param=None, mes_param=None):
+    meses_rango = obtn_meses_rango(anio_param, mes_param)
     
     etiquetas = []
     rentabilidad_mensual = []

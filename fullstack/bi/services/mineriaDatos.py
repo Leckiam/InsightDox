@@ -1,9 +1,6 @@
 from django.conf import settings
-from .gcp_gsc import subir_modelo
 import pandas as pd
 import numpy as np
-import os
-import joblib
 
 class AnalizadorMovimientos:
     def __init__(self, df: pd.DataFrame):
@@ -137,32 +134,32 @@ class AnalizadorMovimientos:
         valor = df.loc[df['fecha'].idxmin()].to_dict() if not df.empty else None
         return {"movimiento_mas_antiguo": valor}
     
-    def _preparar_dataset_gastos(self):
-        # Filtramos solo gastos GA
-        df = self.df[self.df['naturaleza'] == 'GA'][['fecha', 'total']].copy()
-        df = df.sort_values('fecha')
+    def _preparar_dataset(self, tipo='GA'):
+        # Filtramos por naturaleza
+        df = self.df[self.df['naturaleza'] == tipo].copy()
 
-        # Feature temporal
+        # Agrupamos por mes (sumando todos los contratos del mes)
+        df = df.groupby(df['fecha'].dt.to_period('M'))['total'].sum().reset_index()
+        df['fecha'] = df['fecha'].dt.to_timestamp()
+
+        # Features temporales
         df['t'] = (df['fecha'] - df['fecha'].min()).dt.days
+        df['t'] = df['t'] / 365  # normalización
 
-        # Features cíclicas de mes
         df['mes'] = df['fecha'].dt.month
         df['mes_sin'] = np.sin(2 * np.pi * df['mes'] / 12)
         df['mes_cos'] = np.cos(2 * np.pi * df['mes'] / 12)
 
-        # Día de la semana
         df['weekday'] = df['fecha'].dt.weekday
         df['weekday_sin'] = np.sin(2 * np.pi * df['weekday'] / 7)
         df['weekday_cos'] = np.cos(2 * np.pi * df['weekday'] / 7)
 
-        # Lag features
+        # Lags y rolling
         df['total_lag1'] = df['total'].shift(1).fillna(method='bfill')
         df['total_lag3'] = df['total'].shift(3).fillna(method='bfill')
         df['total_lag6'] = df['total'].shift(6).fillna(method='bfill')
-
-        # Promedio móvil
-        df['total_roll3'] = df['total'].rolling(window=3, min_periods=1).mean()
-        df['total_roll6'] = df['total'].rolling(window=6, min_periods=1).mean()
+        df['total_roll3'] = df['total'].rolling(3, min_periods=1).mean()
+        df['total_roll6'] = df['total'].rolling(6, min_periods=1).mean()
 
         # Cambio relativo
         df['cambio_mes'] = df['total'].pct_change().fillna(0)
@@ -236,12 +233,12 @@ class AnalizadorMovimientos:
             "promedio_totales": df["total"].mean(),
         }
 
-    def _entrenar_modelo_gastos(self, df):
+    def _entrenar_modelo(self, df):
         from sklearn.model_selection import train_test_split
         from sklearn.ensemble import RandomForestRegressor
         from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-        
-        # Features y target
+        import joblib, os
+
         features = ['t', 'mes_sin', 'mes_cos', 'weekday_sin', 'weekday_cos',
                     'total_lag1', 'total_lag3', 'total_lag6', 'total_roll3', 'total_roll6', 'cambio_mes']
         X = df[features]
@@ -258,42 +255,35 @@ class AnalizadorMovimientos:
         )
         modelo.fit(X_train, y_train)
 
-        # Predicciones en test
         y_pred = modelo.predict(X_test)
-
-        # Métricas
         mae = mean_absolute_error(y_test, y_pred)
-        mse = mean_squared_error(y_test, y_pred)
-        rmse = np.sqrt(mse)
+        rmse = mean_squared_error(y_test, y_pred, squared=False)
         r2 = r2_score(y_test, y_pred)
+        print(f"MAE: {mae}, RMSE: {rmse}, R2: {r2}")
 
-        print(f"MAE: {mae}, MSE: {mse}, RMSE: {rmse}, R2: {r2}")
-
-        # Guardar el modelo localmente 
-        local_path = os.path.join(settings.BASE_DIR, "config", "modelo", "predecir_gastos.pkl")
-        joblib.dump(modelo, local_path) 
-        if settings.DEBUG == False:
-            # Subir el modelo a Google Cloud Storage
-            subir_modelo(local_path, "predecir_gastos.pkl")
+        # Guardar modelo
+        local_path = os.path.join(settings.BASE_DIR, "config", "modelo", "predecir.pkl")
+        joblib.dump(modelo, local_path)
 
         return modelo, features
 
     # ==================== Predecir futuro ====================
     def _predecir_futuro(self, modelo, df, features, n):
+        import pandas as pd
+        import numpy as np
         ult_fecha = df["fecha"].max()
         ult_t = df["t"].max()
         pred = []
 
-        # Tomamos últimas filas para lags y rolling
         df_tail = df.tail(6).copy()
 
         for i in range(1, n + 1):
             futuro_fecha = ult_fecha + pd.DateOffset(months=i)
-            futuro_t = ult_t + 30 * i
+            futuro_t = ult_t + i/12  # escala anual
+
             mes = futuro_fecha.month
             weekday = futuro_fecha.weekday()
 
-            # Lags y rolling
             lag1 = df_tail['total'].iloc[-1]
             lag3 = df_tail['total'].iloc[-3] if len(df_tail) >= 3 else lag1
             lag6 = df_tail['total'].iloc[-6] if len(df_tail) >= 6 else lag1
@@ -315,22 +305,20 @@ class AnalizadorMovimientos:
                 'cambio_mes': cambio_mes
             }])
 
-            valor = modelo.predict(X_fut)[0]
-
-            # Actualizar df_tail para próximos pasos
+            valor = max(modelo.predict(X_fut)[0], 0)  # fuerza positiva
             df_tail = pd.concat([df_tail, pd.DataFrame({'total':[valor]})], ignore_index=True)
 
             pred.append({
                 "mes": futuro_fecha.strftime("%B %Y"),
                 "total": round(valor),
                 "min": round(valor * 0.85),
-                "max": round(valor * 1.15),
+                "max": round(valor * 1.15)
             })
 
         return pred
 
-    # ==================== Función principal ====================
-    def predecir_gastos(self, cant_meses_futuros=1):
-        df = self._preparar_dataset_gastos()
-        modelo, features = self._entrenar_modelo_gastos(df)
+    # ==================== Función de Recepcion de Prediccion ====================
+    def predecir(self, cant_meses_futuros=1, tipo='GA'):
+        df = self._preparar_dataset(tipo)
+        modelo, features = self._entrenar_modelo(df)
         return self._predecir_futuro(modelo, df, features, cant_meses_futuros)

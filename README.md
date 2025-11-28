@@ -20,6 +20,21 @@
 - **RandomForestRegressor (scikit-learn):** Predice valores futuros de gastos y otros indicadores financieros mediante regresión basada en árboles de decisión.
 - **LogisticRegression (scikit-learn):** Clasifica la intención del usuario para determinar qué tipo de análisis o consulta se debe ejecutar.
 
+## Colaboradores
+
+| Nombre            | Cargo                | Descripción del Rol                                                                 |
+|------------------|----------------------|-------------------------------------------------------------------------------------|
+| **Maikel Cisternas** | Gerente del Proyecto | Responsable de la planificación, definición de objetivos, coordinación del equipo y supervisión integral del desarrollo de InsightDox. |
+| **Marcelo Peña**      | Ingeniero de Software | Encargado del análisis técnico, desarrollo de funcionalidades clave, arquitectura del sistema y soporte en decisiones tecnológicas. |
+
+## 🔗 Branches de Trabajo
+
+- **Maikel Cisternas – Branch:**  
+  [Ir al branch `Maikel-C`](https://github.com/Leckiam/InsightDox/tree/Maikel-C)
+
+- **Marcelo Peña – Branch:**  
+  [Ir al branch `Marcelo-P`](https://github.com/Leckiam/InsightDox/tree/Marcelo-P)
+
 ## Objetivo
 
 Optimizar procesos, reducir costos y mejorar la eficiencia en la comunicación y análisis de información dentro de las organizaciones, incorporando control de usuarios, gestión de archivos y análisis avanzado de datos mediante técnicas de inteligencia artificial y machine learning.  
